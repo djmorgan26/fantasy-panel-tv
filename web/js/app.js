@@ -140,7 +140,7 @@ function rotate() {
 }
 
 async function main() {
-  if (MINI) document.body.classList.add('mini');
+  if (MINI) document.body.classList.add('card');
   if (params.get('side') === 'left') document.body.classList.add('left');
   if (params.get('solid')) document.body.classList.add('solid');
   const demo = params.has('demo');

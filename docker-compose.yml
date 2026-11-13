@@ -48,6 +48,21 @@ services:
         condition: service_healthy
     profiles: ["tools"]
 
+  # Behavioural browser tests against the demo feed.
+  e2e:
+    image: mcr.microsoft.com/playwright:v1.49.1-noble
+    working_dir: /repo
+    command: sh -c "npm install --no-save --no-audit --no-fund --prefix /deps playwright@1.49.1 >/dev/null && node tools/e2e.mjs"
+    environment:
+      - BASE_URL=http://web:8080
+    volumes:
+      - ./:/repo:ro
+      - shots-deps:/deps
+    depends_on:
+      web:
+        condition: service_healthy
+    profiles: ["tools"]
+
   # Builds the Android TV app. Output: dist/fantasy-panel.apk
   apk:
     build:

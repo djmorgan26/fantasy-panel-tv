@@ -175,7 +175,7 @@ body.left .panel { border-left: 0; border-right: 1px solid var(--hair); }
 }
 
 /* Compact score card ("Hey Google, open Fantasy Scores") */
-body.mini .panel {
+body.card .panel {
   height: auto;
   padding: 20px 24px 14px;
   border: 0;
@@ -183,12 +183,12 @@ body.mini .panel {
   background: rgba(20, 20, 24, 0.94);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
 }
-body.mini .top { margin-bottom: 6px; }
-body.mini .week { font-size: 20px; }
-body.mini .matchups, body.mini .detail, body.mini .swing, body.mini .foot { display: none; }
-body.mini .others:not(:empty) { border-top: 0; padding-top: 0; margin-top: 0; }
-body.mini .mini { padding: 9px 0; }
-body.mini .mini + .mini { border-top: 1px solid var(--hair); }
-body.mini .mini-league { font-size: 16px; }
-body.mini .mini-score { font-size: 24px; }
-body.mini .toasts { display: none; }
+body.card .top { margin-bottom: 6px; }
+body.card .week { font-size: 20px; }
+body.card .matchups, body.card .detail, body.card .swing, body.card .foot { display: none; }
+body.card .others:not(:empty) { border-top: 0; padding-top: 0; margin-top: 0; }
+body.card .mini { padding: 9px 0; }
+body.card .mini + .mini { border-top: 1px solid var(--hair); }
+body.card .mini-league { font-size: 16px; }
+body.card .mini-score { font-size: 24px; }
+body.card .toasts { display: none; }

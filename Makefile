@@ -10,7 +10,7 @@ TVCMD := $(COMPOSE) run --rm adb
 endif
 
 .DEFAULT_GOAL := help
-.PHONY: help preview test shots shots-live brand apk hooks check-private \
+.PHONY: help preview test e2e shots shots-live brand apk hooks check-private \
         tv-pair tv-status tv-install tv-config tv-show tv-hide tv-open tv-shot tv-logs tv-uninstall setup down
 
 help: ## Show this list
@@ -21,6 +21,10 @@ preview: ## Live preview at http://localhost:8080/preview.html?demo=1 (add ?conf
 
 test: ## Unit tests for the scoring and win-probability maths
 	$(COMPOSE) run --rm test
+
+e2e: ## Playwright behaviour tests: scores tick, leagues rotate, big plays pop, proxy is locked down
+	docker compose up -d --wait --force-recreate web
+	$(COMPOSE) run --rm --no-deps e2e
 
 shots: ## Playwright screenshots of the demo at 1920x1080 into docs/screenshots
 	docker compose up -d --wait --force-recreate web
