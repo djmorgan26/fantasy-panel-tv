@@ -84,7 +84,9 @@ Then say **"Hey Google, open Fantasy Football"**. Or `make tv-open`.
 - **ESPN**: league id is in the league URL. Team id is the `teamId` in your team page URL.
   Private leagues also need the `espn_s2` and `SWID` cookies from espn.com in your
   browser. They are stored only on the TV and only ever sent to ESPN.
-- **tv.port** is the port shown on the Wireless debugging screen. It changes when the TV reboots.
+- **tv.port** is only a fallback. Pairing is permanent, and although the TV picks a
+  new port whenever it reboots, `make` finds the current one on your network
+  automatically (mDNS, `scripts/find-tv.sh`). You pair once and never again.
 
 `config.local.json` is git-ignored, and `make hooks` installs a pre-commit check
 that refuses any commit containing a value from it.

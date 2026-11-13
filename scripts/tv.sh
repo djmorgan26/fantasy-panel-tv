@@ -47,7 +47,7 @@ case "$cmd" in
     echo "TV:      $($ADB shell getprop ro.product.manufacturer | tr -d '\r') $($ADB shell getprop ro.product.model | tr -d '\r'), Android $($ADB shell getprop ro.build.version.release | tr -d '\r')"
     if installed; then
       v=$($ADB shell dumpsys package "$PKG" | sed -n 's/.*versionName=//p' | head -1 | tr -d '\r')
-      op=$($ADB shell appops get "$PKG" SYSTEM_ALERT_WINDOW | sed 's/.*: //' | tr -d '\r')
+      op=$($ADB shell appops get "$PKG" SYSTEM_ALERT_WINDOW | sed 's/.*: //; s/;.*//' | tr -d '\r')
       run=$($ADB shell dumpsys activity services "$PKG" | grep -c OverlayService || true)
       echo "App:     installed (v$v)"
       echo "Overlay: $op"

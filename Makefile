@@ -3,6 +3,10 @@
 
 COMPOSE := docker compose --profile tools
 # Use LOCAL=1 to drive the TV with an adb already installed and paired on this computer.
+# The TV's port changes after reboots; find it on the network (scripts/find-tv.sh).
+# Override with TV=ip:port. Pairing itself is permanent and never repeated.
+TV ?= $(shell sh scripts/find-tv.sh 2>/dev/null)
+export TV
 ifeq ($(LOCAL),1)
 TVCMD := sh scripts/tv.sh
 else
@@ -10,7 +14,7 @@ TVCMD := $(COMPOSE) run --rm adb
 endif
 
 .DEFAULT_GOAL := help
-.PHONY: help preview test e2e shots shots-live brand apk hooks check-private \
+.PHONY: tv-find help preview test e2e shots shots-live brand apk hooks check-private \
         tv-pair tv-status tv-install tv-config tv-show tv-hide tv-open tv-shot tv-logs tv-uninstall setup down
 
 help: ## Show this list
@@ -49,9 +53,12 @@ hooks: ## Install the git hook that blocks personal data from commits
 check-private: ## Scan every tracked file for values from config.local.json
 	@sh scripts/check-private.sh --all
 
-tv-pair: ## Pair the adb container with the TV: make tv-pair PAIR=ip:port CODE=123456
+tv-pair: ## One time only: pair with the TV. make tv-pair PAIR=ip:port CODE=123456
 	@mkdir -p .adb
 	$(TVCMD) pair $(PAIR) $(CODE)
+
+tv-find: ## Show the TV address found on the network
+	@echo $(TV)
 
 tv-status: ## What is on the TV: model, app installed, permission, panel state
 	@$(TVCMD) status
