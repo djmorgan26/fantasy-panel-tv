@@ -12,8 +12,40 @@ const TYPES = {
   '.json': 'application/json', '.woff2': 'font/woff2', '.png': 'image/png', '.svg': 'image/svg+xml',
 };
 
+const DATA_HOSTS = new Set(['api.sleeper.app', 'lm-api-reads.fantasy.espn.com', 'site.api.espn.com']);
+
+// Same allowlisted proxy the TV app implements natively.
+async function proxy(target, res) {
+  let u;
+  try {
+    u = new URL(target);
+  } catch {
+    return res.writeHead(400).end();
+  }
+  if (u.protocol !== 'https:' || !DATA_HOSTS.has(u.hostname)) return res.writeHead(403).end('host not allowed');
+  const headers = { accept: 'application/json' };
+  if (u.hostname.endsWith('espn.com') && process.env.ALLOW_LOCAL_CONFIG === '1') {
+    try {
+      const cfg = JSON.parse(await readFile(join(ROOT, 'config.local.json'), 'utf8'));
+      const e = (cfg.espn || []).find((x) => x.espn_s2);
+      if (e) headers.cookie = `espn_s2=${e.espn_s2}; SWID=${e.swid}`;
+    } catch {
+      /* no private cookies */
+    }
+  }
+  try {
+    const r = await fetch(u, { headers, signal: AbortSignal.timeout(20000) });
+    const body = Buffer.from(await r.arrayBuffer());
+    res.writeHead(r.status, { 'content-type': r.headers.get('content-type') || 'application/json', 'cache-control': 'no-store' });
+    res.end(body);
+  } catch (e) {
+    res.writeHead(502).end(String(e));
+  }
+}
+
 createServer(async (req, res) => {
   const url = new URL(req.url, 'http://x');
+  if (url.pathname === '/proxy') return proxy(url.searchParams.get('u'), res);
   let path = decodeURIComponent(url.pathname);
   let file;
   if (path === '/' || path === '') path = '/index.html';

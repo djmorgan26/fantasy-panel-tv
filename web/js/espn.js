@@ -1,5 +1,6 @@
 // ESPN adapter. Public leagues need nothing; private leagues need the
-// espn_s2 and SWID cookies, which the Android app sets on the WebView.
+// espn_s2 and SWID cookies, which the proxy (TV app or dev server) attaches.
+// Page script never sees them.
 import { fetchJson, ESPN_PRO_TEAMS, shortName } from './util.js';
 import { gameLabel, playerState } from './nfl.js';
 import { buildMatchup } from './model.js';
@@ -99,9 +100,7 @@ export async function loadEspn(entries, nfl) {
   for (const e of entries || []) {
     if (!e?.leagueId || !e?.teamId) continue;
     const season = e.season || nfl.season;
-    const data = await fetchJson(espnUrl(season, e.leagueId, nfl.week), {
-      credentials: e.espn_s2 ? 'include' : 'omit',
-    });
+    const data = await fetchJson(espnUrl(season, e.leagueId, nfl.week), { timeoutMs: 20000 });
     const m = parseEspn(data, Number(e.teamId), nfl);
     if (m) out.push(m);
   }

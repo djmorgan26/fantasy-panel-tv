@@ -23,17 +23,16 @@ test: ## Unit tests for the scoring and win-probability maths
 	$(COMPOSE) run --rm test
 
 shots: ## Playwright screenshots of the demo at 1920x1080 into docs/screenshots
-	docker compose up -d --force-recreate web
-	$(COMPOSE) run --rm shots
+	docker compose up -d --wait --force-recreate web
+	$(COMPOSE) run --rm --no-deps shots
 
 shots-live: ## Screenshots with YOUR leagues into .private/shots (never committed)
-	ALLOW_LOCAL_CONFIG=1 docker compose up -d --force-recreate web
-	SHOOT_LIVE=1 $(COMPOSE) run --rm shots
-	docker compose up -d --force-recreate web
+	ALLOW_LOCAL_CONFIG=1 docker compose up -d --wait --force-recreate web
+	SHOOT_LIVE=1 $(COMPOSE) run --rm --no-deps shots; s=$$?; docker compose up -d --force-recreate web >/dev/null 2>&1; exit $$s
 
 brand: ## Re-render the TV banner and icon from tools/brand/brand.html
-	docker compose up -d --force-recreate web
-	BRAND=1 $(COMPOSE) run --rm shots
+	docker compose up -d --wait --force-recreate web
+	BRAND=1 $(COMPOSE) run --rm --no-deps shots
 
 apk: ## Build the Android TV app into dist/fantasy-panel.apk
 	@mkdir -p .keystore

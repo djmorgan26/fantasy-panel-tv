@@ -38,6 +38,11 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -57,6 +62,8 @@ public class OverlayService extends Service {
     private static final String ORIGIN_HOST = "panel.local";
     private static final String ORIGIN = "https://" + ORIGIN_HOST + "/";
     private static final String CHANNEL = "panel";
+    private static final Set<String> DATA_HOSTS = new HashSet<>(Arrays.asList(
+            "api.sleeper.app", "lm-api-reads.fantasy.espn.com", "site.api.espn.com"));
     private static final int NOTIFICATION_ID = 1;
 
     private static volatile boolean showing = false;
@@ -346,6 +353,7 @@ public class OverlayService extends Service {
         public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest req) {
             if (!ORIGIN_HOST.equals(req.getUrl().getHost())) return null;
             String path = req.getUrl().getPath();
+            if ("/proxy".equals(path)) return proxy(req.getUrl().getQueryParameter("u"));
             if (path == null || path.equals("/") || path.isEmpty()) path = "/index.html";
             if (path.contains("..")) return notFound();
             String ext = path.substring(path.lastIndexOf('.') + 1);
@@ -360,6 +368,44 @@ public class OverlayService extends Service {
             } catch (IOException e) {
                 return notFound();
             }
+        }
+
+        /**
+         * Fetches score data natively for the page (this runs on a WebView
+         * background thread). Only https and only the allowlisted hosts.
+         */
+        private WebResourceResponse proxy(String target) {
+            HttpURLConnection c = null;
+            try {
+                URL u = new URL(target);
+                if (!"https".equals(u.getProtocol()) || !DATA_HOSTS.contains(u.getHost())) {
+                    return error(403, "Forbidden");
+                }
+                c = (HttpURLConnection) u.openConnection();
+                c.setConnectTimeout(10000);
+                c.setReadTimeout(20000);
+                c.setInstanceFollowRedirects(false);
+                c.setRequestProperty("Accept", "application/json");
+                if (u.getHost().endsWith("espn.com")) {
+                    String cookie = CookieManager.getInstance().getCookie(target);
+                    if (cookie != null) c.setRequestProperty("Cookie", cookie);
+                }
+                int code = c.getResponseCode();
+                InputStream body = code < 400 ? c.getInputStream() : c.getErrorStream();
+                Map<String, String> h = new HashMap<>();
+                h.put("Cache-Control", "no-store");
+                String reason = c.getResponseMessage();
+                return new WebResourceResponse("application/json", "utf-8", code,
+                        reason == null || reason.isEmpty() ? "OK" : reason, h, body);
+            } catch (Exception e) {
+                Log.w(TAG, "proxy failed: " + e.getClass().getSimpleName());
+                if (c != null) c.disconnect();
+                return error(502, "Bad Gateway");
+            }
+        }
+
+        private WebResourceResponse error(int code, String reason) {
+            return new WebResourceResponse("text/plain", "utf-8", code, reason, new HashMap<>(), null);
         }
 
         private WebResourceResponse notFound() {

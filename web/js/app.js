@@ -127,6 +127,8 @@ async function main() {
   if (cfg?.panel?.side === 'left') document.body.classList.add('left');
   if (cfg?.panel?.rotateSeconds) state.rotateMs = Math.max(5, cfg.panel.rotateSeconds) * SEC;
   if (!demo && !cfg) {
+    renderHeader(null, null);
+    document.getElementById('status').innerHTML = '<span class="dot"></span><span>Setup</span>';
     renderMessage(
       'Almost there',
       'Send your league settings to the TV with <code>make tv-config</code>, then open Fantasy Football again.'

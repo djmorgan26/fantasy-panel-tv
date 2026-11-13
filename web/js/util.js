@@ -1,11 +1,29 @@
 // Small shared helpers. No dependencies, so the panel runs the same in a
 // desktop browser, in Playwright, and inside the Android TV WebView.
 
-export async function fetchJson(url, { timeoutMs = 12000, credentials = 'omit' } = {}) {
+// Data hosts the panel may read. Requests go through the host app's same
+// origin proxy (the TV app natively, or tools/serve.mjs in development), so
+// browser CORS rules never apply and nothing else can be fetched.
+export const DATA_HOSTS = ['api.sleeper.app', 'lm-api-reads.fantasy.espn.com', 'site.api.espn.com'];
+
+export const proxied = (url) =>
+  typeof location !== 'undefined' && /^https?:$/.test(location.protocol) ? `proxy?u=${encodeURIComponent(url)}` : url;
+
+export async function fetchJson(url, opts = {}) {
+  try {
+    return await fetchOnce(url, opts);
+  } catch (e) {
+    // One quiet retry: ESPN's edge hands out the odd 502.
+    await new Promise((r) => setTimeout(r, 1500));
+    return fetchOnce(url, opts);
+  }
+}
+
+async function fetchOnce(url, { timeoutMs = 12000 } = {}) {
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
-    const res = await fetch(url, { signal: ctrl.signal, credentials, cache: 'no-store' });
+    const res = await fetch(proxied(url), { signal: ctrl.signal, cache: 'no-store' });
     if (!res.ok) throw new Error(`${res.status} ${new URL(url).host}`);
     return await res.json();
   } finally {
