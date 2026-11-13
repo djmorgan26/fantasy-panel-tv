@@ -165,7 +165,6 @@ public class OverlayService extends Service {
         }
     }
 
-    @SuppressLint({"SetJavaScriptEnabled", "JavascriptInterface"})
     private void switchMode(String wanted) {
         WebView old = webView;
         webView = null;
@@ -173,6 +172,7 @@ public class OverlayService extends Service {
         show(wanted);
     }
 
+    @SuppressLint({"SetJavaScriptEnabled", "JavascriptInterface"})
     private void show(String wanted) {
         mode = wanted;
         if (!getSystemService(PowerManager.class).isInteractive()) {
