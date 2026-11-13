@@ -173,3 +173,22 @@ body.left .panel { border-left: 0; border-right: 1px solid var(--hair); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* Compact score card ("Hey Google, open Fantasy Scores") */
+body.mini .panel {
+  height: auto;
+  padding: 20px 24px 14px;
+  border: 0;
+  border-radius: 22px;
+  background: rgba(20, 20, 24, 0.94);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+body.mini .top { margin-bottom: 6px; }
+body.mini .week { font-size: 20px; }
+body.mini .matchups, body.mini .detail, body.mini .swing, body.mini .foot { display: none; }
+body.mini .others:not(:empty) { border-top: 0; padding-top: 0; margin-top: 0; }
+body.mini .mini { padding: 9px 0; }
+body.mini .mini + .mini { border-top: 1px solid var(--hair); }
+body.mini .mini-league { font-size: 16px; }
+body.mini .mini-score { font-size: 24px; }
+body.mini .toasts { display: none; }

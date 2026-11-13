@@ -58,6 +58,11 @@ public class OverlayService extends Service {
     static final String ACTION_HIDE = "hide";
     static final String ACTION_TOGGLE = "toggle";
     static final String ACTION_RELOAD = "reload";
+    static final String MODE_FULL = "full";
+    static final String MODE_MINI = "mini";
+    private static final String EXTRA_MODE = "mode";
+    /** The page lays itself out at this many CSS px wide. */
+    private static final double DESIGN_WIDTH = 480.0;
 
     private static final String ORIGIN_HOST = "panel.local";
     private static final String ORIGIN = "https://" + ORIGIN_HOST + "/";
@@ -72,6 +77,8 @@ public class OverlayService extends Service {
     private WebView webView;
     private int panelWidth;
     private boolean leftSide;
+    private String mode = MODE_FULL;
+    private WindowManager.LayoutParams params;
 
     /** The TV went to sleep: close the panel so nothing lingers. */
     private final BroadcastReceiver screenOff = new BroadcastReceiver() {
@@ -88,7 +95,11 @@ public class OverlayService extends Service {
     }
 
     static void send(Context ctx, String action) {
-        Intent i = new Intent(ctx, OverlayService.class).setAction(action);
+        send(ctx, action, MODE_FULL);
+    }
+
+    static void send(Context ctx, String action, String mode) {
+        Intent i = new Intent(ctx, OverlayService.class).setAction(action).putExtra(EXTRA_MODE, mode);
         if (ACTION_HIDE.equals(action) && !showing) return;
         ctx.startForegroundService(i);
     }
@@ -103,6 +114,7 @@ public class OverlayService extends Service {
         // Every start must promote to foreground promptly, even a hide.
         goForeground();
         String action = intent != null && intent.getAction() != null ? intent.getAction() : ACTION_TOGGLE;
+        String wanted = intent != null && MODE_MINI.equals(intent.getStringExtra(EXTRA_MODE)) ? MODE_MINI : MODE_FULL;
         if (!Settings.canDrawOverlays(this)) {
             Log.w(TAG, "overlay permission missing");
             stopEverything();
@@ -110,7 +122,8 @@ public class OverlayService extends Service {
         }
         switch (action) {
             case ACTION_SHOW:
-                if (webView == null) show();
+                if (webView == null) show(wanted);
+                else if (!wanted.equals(mode)) switchMode(wanted);
                 break;
             case ACTION_HIDE:
                 hide();
@@ -124,7 +137,9 @@ public class OverlayService extends Service {
                 }
                 break;
             default:
-                if (webView == null) show();
+                // Same command again hides; the other command switches layouts.
+                if (webView == null) show(wanted);
+                else if (!wanted.equals(mode)) switchMode(wanted);
                 else hide();
         }
         // If Android ever kills us, do not resurrect the panel on its own.
@@ -151,7 +166,15 @@ public class OverlayService extends Service {
     }
 
     @SuppressLint({"SetJavaScriptEnabled", "JavascriptInterface"})
-    private void show() {
+    private void switchMode(String wanted) {
+        WebView old = webView;
+        webView = null;
+        destroyView(old);
+        show(wanted);
+    }
+
+    private void show(String wanted) {
+        mode = wanted;
         if (!getSystemService(PowerManager.class).isInteractive()) {
             Log.i(TAG, "screen is off, not showing");
             stopEverything();
@@ -209,9 +232,12 @@ public class OverlayService extends Service {
             }
         });
 
+        boolean mini = MODE_MINI.equals(mode);
+        int margin = mini ? (int) Math.round(panelWidth * 0.06) : 0;
         WindowManager.LayoutParams lp = new WindowManager.LayoutParams(
                 panelWidth,
-                WindowManager.LayoutParams.MATCH_PARENT,
+                // The mini card starts small and is sized by the page (setContentHeight).
+                mini ? (int) Math.round(panelWidth * 0.4) : WindowManager.LayoutParams.MATCH_PARENT,
                 WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
                         | WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
@@ -219,12 +245,15 @@ public class OverlayService extends Service {
                         | WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED,
                 PixelFormat.TRANSLUCENT);
         lp.gravity = Gravity.TOP | (leftSide ? Gravity.START : Gravity.END);
+        lp.x = margin;
+        lp.y = margin;
         lp.setTitle("FantasyPanel");
+        params = lp;
 
         webView.setTranslationX(leftSide ? -panelWidth : panelWidth);
         webView.setAlpha(0f);
         windowManager.addView(webView, lp);
-        webView.loadUrl(ORIGIN + "index.html");
+        webView.loadUrl(ORIGIN + "index.html" + (mini ? "?mode=mini" : ""));
         webView.animate().translationX(0).alpha(1f).setDuration(420)
                 .setInterpolator(new DecelerateInterpolator(2.2f)).start();
         showing = true;
@@ -234,7 +263,7 @@ public class OverlayService extends Service {
             else registerReceiver(screenOff, f);
             screenOffRegistered = true;
         }
-        Log.i(TAG, "panel shown, width " + panelWidth + "px");
+        Log.i(TAG, "panel shown (" + mode + "), width " + panelWidth + "px");
     }
 
     private void hide() {
@@ -307,8 +336,24 @@ public class OverlayService extends Service {
         cm.flush();
     }
 
-    /** Read-only bridge: the page can ask for its config, nothing else. */
+    /** Read-only bridge: the page can read its config and size the mini card. */
     private class Bridge {
+        @JavascriptInterface
+        public void setContentHeight(final int cssPx) {
+            if (cssPx < 40 || cssPx > 2000) return;
+            new android.os.Handler(android.os.Looper.getMainLooper()).post(() -> {
+                if (webView == null || params == null || !MODE_MINI.equals(mode)) return;
+                int h = (int) Math.ceil(cssPx * panelWidth / DESIGN_WIDTH);
+                if (Math.abs(params.height - h) < 2) return;
+                params.height = h;
+                try {
+                    windowManager.updateViewLayout(webView, params);
+                } catch (RuntimeException e) {
+                    Log.w(TAG, "resize", e);
+                }
+            });
+        }
+
         @JavascriptInterface
         public String getConfig() {
             JSONObject cfg = Prefs.config(OverlayService.this);

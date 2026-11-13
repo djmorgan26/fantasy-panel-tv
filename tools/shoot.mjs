@@ -36,7 +36,11 @@ let problems = [];
 
 if (process.env.BRAND === '1') {
   const res = 'android/app/src/main/res';
-  for (const [kind, out] of [['banner', `${res}/drawable-xhdpi/banner.png`], ['icon', `${res}/drawable-nodpi/icon.png`]]) {
+  for (const [kind, out] of [
+    ['banner', `${res}/drawable-xhdpi/banner.png`],
+    ['banner-scores', `${res}/drawable-xhdpi/banner_scores.png`],
+    ['icon', `${res}/drawable-nodpi/icon.png`],
+  ]) {
     const page = await ctx.newPage();
     await page.goto(`${BASE}/brand.html?kind=${kind}`, { waitUntil: 'networkidle' });
     await page.waitForTimeout(300);
@@ -50,10 +54,12 @@ if (process.env.BRAND === '1') {
   problems.push(...(await shot('/preview.html?demo=1&minute=34&toast=1', 'docs/screenshots/tv-big-play.png', { wait: 1500 })));
   problems.push(...(await shot('/preview.html?demo=1&minute=-200', 'docs/screenshots/tv-pregame.png')));
   problems.push(...(await shot('/preview.html?demo=1&minute=40', 'docs/screenshots/panel-closeup.png', { clip: panelClip })));
+  problems.push(...(await shot('/preview.html?demo=1&minute=40&mode=mini', 'docs/screenshots/tv-scores-card.png')));
 } else {
   await mkdir('.private/shots', { recursive: true });
   problems.push(...(await shot('/preview.html?config=local', '.private/shots/tv-real.png', { wait: 9000 })));
   problems.push(...(await shot('/preview.html?config=local', '.private/shots/panel-real.png', { wait: 9000, clip: panelClip })));
+  problems.push(...(await shot('/preview.html?config=local&mode=mini', '.private/shots/tv-scores-real.png', { wait: 9000 })));
 }
 
 await browser.close();

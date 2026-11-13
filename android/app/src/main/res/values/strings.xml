@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Fantasy Football</string>
+    <string name="scores_name">Fantasy Scores</string>
     <string name="setup_title">One more step</string>
     <string name="setup_body">Fantasy Football needs permission to show its panel over other apps.\n\nOn your computer, run  make tv-install  from the fantasy-panel-tv folder. It grants the permission and sends your league settings. Then say “Hey Google, open Fantasy Football.”\n\nPress Back to return.</string>
 </resources>

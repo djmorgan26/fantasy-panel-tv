@@ -30,10 +30,12 @@
           <circle cx="53" cy="12" r="6.5" fill="#30d158"/>
         </svg>`;
       const kind = new URLSearchParams(location.search).get('kind') || 'banner';
+      const label = kind === 'banner-scores' ? 'Fantasy<br>Scores' : 'Fantasy<br>Football';
+      const sub = kind === 'banner-scores' ? 'Score card' : 'Live panel';
       document.getElementById('root').innerHTML =
         kind === 'icon'
           ? `<div class="icon" id="art">${ball(128)}</div>`
-          : `<div class="banner" id="art">${ball(72)}<div><div class="t">Fantasy<br>Football</div><div class="s"><i></i>Live panel</div></div></div>`;
+          : `<div class="banner" id="art">${ball(72)}<div><div class="t">${label}</div><div class="s"><i></i>${sub}</div></div></div>`;
     </script>
   </body>
 </html>

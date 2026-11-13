@@ -97,6 +97,16 @@ function compactRow(m) {
       </div>`;
 }
 
+// The compact score card: one row per league, nothing else.
+export function renderMini(matchups) {
+  const o = $('others');
+  o.innerHTML = matchups.map(compactRow).join('');
+  tweenNumbers(o);
+  $('matchups').innerHTML = '';
+  $('detail').innerHTML = '';
+  $('swing').innerHTML = '';
+}
+
 let focusShown = null;
 
 export function renderMatchups(matchups, focusKey) {

@@ -37,6 +37,19 @@
             </intent-filter>
         </activity>
 
+        <!-- "Hey Google, open Fantasy Scores": the compact score card. -->
+        <activity-alias
+            android:name=".ScoresAlias"
+            android:banner="@drawable/banner_scores"
+            android:exported="true"
+            android:label="@string/scores_name"
+            android:targetActivity=".ToggleActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
         <!-- Shown only if the overlay permission is missing. -->
         <activity
             android:name=".SetupActivity"

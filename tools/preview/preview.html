@@ -25,6 +25,7 @@
       .dock { position: fixed; top: 0; bottom: 0; right: 0; }
       .dock.left { left: 0; right: auto; }
       .dock iframe { border: 0; background: transparent; transform-origin: top left; display: block; }
+      .dock.mini { bottom: auto; }
     </style>
   </head>
   <body>
@@ -40,6 +41,8 @@
       const dock = document.getElementById('dock');
       const frame = document.getElementById('panel');
       if (left) dock.classList.add('left');
+      const mini = q.get('mode') === 'mini';
+      if (mini) dock.classList.add('mini');
       const inner = new URLSearchParams(q);
       inner.delete('width');
       frame.src = 'index.html?' + inner.toString();
@@ -49,7 +52,8 @@
         const s = w / 480;
         dock.style.width = w + 'px';
         frame.style.width = '480px';
-        frame.style.height = innerHeight / s + 'px';
+        frame.style.height = (mini ? 300 : innerHeight / s) + 'px';
+        if (mini) { dock.style.top = dock.style.right = Math.round(w * 0.06) + 'px'; dock.style.height = 300 * s + 'px'; }
         frame.style.transform = `scale(${s})`;
       }
       fit();

@@ -35,8 +35,6 @@ connect() {
 
 installed() { $ADB shell pm list packages "$PKG" | tr -d '\r' | grep -qx "package:$PKG"; }
 
-bcast() { $ADB shell am broadcast -a "$PKG.$1" -n "$PKG/.ControlReceiver" >/dev/null; }
-
 cmd=${1:-help}
 [ $# -gt 0 ] && shift
 case "$cmd" in
@@ -77,13 +75,14 @@ case "$cmd" in
   show|hide|toggle|reload)
     connect
     installed || die "app not installed: make tv-install"
-    bcast "$(echo "$cmd" | tr a-z A-Z)"
-    echo "$cmd sent"
+    $ADB shell am broadcast -a "$PKG.$(echo "$cmd" | tr a-z A-Z)" -n "$PKG/.ControlReceiver" --es mode "${MODE:-full}" >/dev/null
+    echo "$cmd sent${MODE:+ ($MODE)}"
     ;;
   open)
     # Same path as "Hey Google, open Fantasy Football".
     connect
-    $ADB shell am start -n "$PKG/.ToggleActivity" >/dev/null
+    if [ "${MODE:-full}" = mini ]; then comp="$PKG/.ScoresAlias"; else comp="$PKG/.ToggleActivity"; fi
+    $ADB shell am start -n "$comp" >/dev/null
     echo "opened (toggles the panel)"
     ;;
   shot)

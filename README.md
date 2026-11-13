@@ -5,6 +5,9 @@ whatever you are watching: your live fantasy score, win odds, a slot by slot
 lineup against your opponent, your other leagues, and the NFL games that swing
 your week the most. Say it again and it slides away.
 
+Watching a tight game and want less on screen? Say **"Hey Google, open Fantasy
+Scores"** for a small score card in the corner instead.
+
 Works with **Sleeper** and **ESPN** leagues, any number of them, on any Google TV
 or Android TV. Runs entirely in Docker on your computer: nothing to install
 except Docker.
@@ -28,6 +31,8 @@ except Docker.
     </td>
   </tr>
 </table>
+
+<img src="docs/screenshots/tv-scores-card.png" width="640" alt="The compact score card">
 
 ## How it works
 

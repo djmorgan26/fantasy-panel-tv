@@ -59,14 +59,14 @@ tv-install: apk ## Build, install, grant the overlay permission, send your setti
 tv-config: ## Re-send config.local.json to the TV
 	@$(TVCMD) config
 
-tv-show: ## Show the panel
-	@$(TVCMD) show
+tv-show: ## Show the panel (MODE=mini for the score card)
+	@MODE=$(MODE) $(TVCMD) show
 
 tv-hide: ## Hide the panel
 	@$(TVCMD) hide
 
-tv-open: ## Toggle the panel exactly like "Hey Google, open Fantasy Football"
-	@$(TVCMD) open
+tv-open: ## Toggle exactly like "Hey Google, open Fantasy Football" (MODE=mini: "Fantasy Scores")
+	@MODE=$(MODE) $(TVCMD) open
 
 tv-shot: ## Screenshot the TV into .private/shots
 	@$(TVCMD) shot

@@ -6,8 +6,20 @@ import { loadEspn } from './espn.js';
 import { swingGames, scoringEvents } from './model.js';
 import { createDemo } from './demo.js';
 import {
-  renderHeader, renderMatchups, renderLineup, renderSwing, renderFoot, renderMessage, showToast,
+  renderHeader, renderMatchups, renderLineup, renderSwing, renderFoot, renderMessage, showToast, renderMini,
 } from './render.js';
+
+// The TV app sizes the mini card's window to fit its content.
+function reportHeight() {
+  requestAnimationFrame(() => {
+    const h = Math.ceil(document.getElementById('panel').getBoundingClientRect().height);
+    try {
+      window.FFNative?.setContentHeight?.(h);
+    } catch {
+      /* not in the TV app */
+    }
+  });
+}
 
 const params = new URLSearchParams(location.search);
 const SEC = 1000;
@@ -64,9 +76,16 @@ function nextDelay(nfl, demo) {
   return 5 * 60 * SEC;
 }
 
+const MINI = params.get('mode') === 'mini';
+
 function draw() {
   const ms = state.matchups || [];
   if (!ms.length) return;
+  if (MINI) {
+    renderMini(ms);
+    reportHeight();
+    return;
+  }
   const i = state.rotateIndex % ms.length;
   renderMatchups(ms, ms[i].key);
   renderLineup(ms[i], i, ms.length);
@@ -86,6 +105,7 @@ async function tick(source, demo) {
         errors.length ? 'Can’t reach your leagues' : 'No matchups this week',
         errors.length ? 'Retrying shortly.' : 'Check back when the next week starts.'
       );
+      if (MINI) reportHeight();
     } else {
       // Jump to the league where something just happened.
       if (events.length) {
@@ -96,7 +116,7 @@ async function tick(source, demo) {
         }
       }
       draw();
-      events.slice(0, 3).forEach((e, k) => setTimeout(() => showToast(e), k * 600));
+      if (!MINI) events.slice(0, 3).forEach((e, k) => setTimeout(() => showToast(e), k * 600));
     }
     renderFoot(new Date(), errors);
     delay = nextDelay(nfl, demo);
@@ -120,6 +140,7 @@ function rotate() {
 }
 
 async function main() {
+  if (MINI) document.body.classList.add('mini');
   if (params.get('side') === 'left') document.body.classList.add('left');
   if (params.get('solid')) document.body.classList.add('solid');
   const demo = params.has('demo');

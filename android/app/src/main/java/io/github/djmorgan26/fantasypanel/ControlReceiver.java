@@ -39,13 +39,13 @@ public class ControlReceiver extends BroadcastReceiver {
                 break;
             }
             case P + "SHOW":
-                if (Settings.canDrawOverlays(ctx)) OverlayService.send(ctx, OverlayService.ACTION_SHOW);
+                if (Settings.canDrawOverlays(ctx)) OverlayService.send(ctx, OverlayService.ACTION_SHOW, mode(intent));
                 break;
             case P + "HIDE":
                 OverlayService.send(ctx, OverlayService.ACTION_HIDE);
                 break;
             case P + "TOGGLE":
-                if (Settings.canDrawOverlays(ctx)) OverlayService.send(ctx, OverlayService.ACTION_TOGGLE);
+                if (Settings.canDrawOverlays(ctx)) OverlayService.send(ctx, OverlayService.ACTION_TOGGLE, mode(intent));
                 break;
             case P + "RELOAD":
                 if (OverlayService.isShowing()) OverlayService.send(ctx, OverlayService.ACTION_RELOAD);
@@ -53,5 +53,9 @@ public class ControlReceiver extends BroadcastReceiver {
             default:
                 break;
         }
+    }
+
+    private static String mode(Intent i) {
+        return OverlayService.MODE_MINI.equals(i.getStringExtra("mode")) ? OverlayService.MODE_MINI : OverlayService.MODE_FULL;
     }
 }
