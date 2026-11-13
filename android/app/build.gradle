@@ -1,0 +1,36 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'io.github.djmorgan26.fantasypanel'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'io.github.djmorgan26.fantasypanel'
+        minSdk 26
+        targetSdk 34
+        versionCode 1
+        versionName '0.1.0'
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            // Signed with the per-machine debug key kept in ./.keystore so
+            // reinstalls upgrade in place. Build your own for distribution.
+            signingConfig signingConfigs.debug
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    lint {
+        abortOnError true
+        checkReleaseBuilds true
+        disable 'ExpiredTargetSdkVersion', 'OldTargetApi', 'GradleDependency', 'AndroidGradlePluginVersion'
+    }
+}

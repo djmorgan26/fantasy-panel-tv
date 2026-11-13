@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Fantasy Panel preview</title>
+    <style>
+      html, body { margin: 0; height: 100%; background: #000; overflow: hidden; font-family: system-ui, sans-serif; }
+      /* A stand-in for whatever is playing on the TV: a stylised broadcast. */
+      .tv { position: fixed; inset: 0; overflow: hidden;
+        background:
+          radial-gradient(120% 70% at 50% 0%, rgba(255,255,255,.18), transparent 60%),
+          repeating-linear-gradient(90deg, transparent 0 158px, rgba(255,255,255,.55) 158px 161px),
+          repeating-linear-gradient(90deg, #2f7a35 0 160px, #2a7030 160px 320px);
+        filter: saturate(1.05);
+      }
+      .tv::before { content: ''; position: absolute; inset: 0;
+        background: linear-gradient(180deg, rgba(0,0,0,.55) 0%, rgba(0,0,0,0) 30%, rgba(0,0,0,0) 70%, rgba(0,0,0,.6) 100%); }
+      .tv .players { position: absolute; left: 34%; top: 46%; width: 360px; height: 180px; filter: blur(1.5px); }
+      .tv .players i { position: absolute; width: 26px; height: 54px; border-radius: 13px 13px 8px 8px; }
+      .bug { position: absolute; left: 64px; bottom: 56px; display: flex; align-items: stretch; height: 56px;
+        border-radius: 8px; overflow: hidden; box-shadow: 0 6px 24px rgba(0,0,0,.4); color: #fff; font-weight: 700; font-size: 26px; }
+      .bug span { display: flex; align-items: center; padding: 0 18px; }
+      .bug .a { background: #c8102e; } .bug .b { background: #00338d; } .bug .c { background: #111; font-weight: 600; font-size: 20px; }
+      .dock { position: fixed; top: 0; bottom: 0; right: 0; }
+      .dock.left { left: 0; right: auto; }
+      .dock iframe { border: 0; background: transparent; transform-origin: top left; display: block; }
+    </style>
+  </head>
+  <body>
+    <div class="tv">
+      <div class="players" id="players"></div>
+      <div class="bug"><span class="a">KC 17</span><span class="b">BUF 21</span><span class="c">3rd · 8:42</span></div>
+    </div>
+    <div class="dock" id="dock"><iframe id="panel" title="Fantasy panel"></iframe></div>
+    <script>
+      const q = new URLSearchParams(location.search);
+      const width = Number(q.get('width') || 0.26);
+      const left = q.get('side') === 'left';
+      const dock = document.getElementById('dock');
+      const frame = document.getElementById('panel');
+      if (left) dock.classList.add('left');
+      const inner = new URLSearchParams(q);
+      inner.delete('width');
+      frame.src = 'index.html?' + inner.toString();
+      // Same maths as the Android app: lay out at 480 CSS px, scale to the dock.
+      function fit() {
+        const w = Math.round(innerWidth * width);
+        const s = w / 480;
+        dock.style.width = w + 'px';
+        frame.style.width = '480px';
+        frame.style.height = innerHeight / s + 'px';
+        frame.style.transform = `scale(${s})`;
+      }
+      fit();
+      addEventListener('resize', fit);
+      const colors = ['#c8102e', '#c8102e', '#c8102e', '#fff', '#fff', '#fff', '#00338d', '#00338d'];
+      document.getElementById('players').innerHTML = colors
+        .map((c, i) => `<i style="background:${c};left:${(i * 47) % 340}px;top:${(i * 61) % 120}px"></i>`)
+        .join('');
+    </script>
+  </body>
+</html>

@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <!-- Laid out at 480 CSS px wide; the TV app scales it to the real panel width. -->
+    <meta name="viewport" content="width=480, user-scalable=no" />
+    <title>Fantasy Panel</title>
+    <link rel="stylesheet" href="panel.css" />
+  </head>
+  <body>
+    <main id="panel" class="panel" aria-live="polite">
+      <header class="top">
+        <div class="week" id="week">Fantasy</div>
+        <div class="status" id="status"><span class="dot"></span><span>Loading</span></div>
+      </header>
+      <section class="matchups" id="matchups"></section>
+      <section class="detail" id="detail"></section>
+      <section class="others" id="others"></section>
+      <section class="swing" id="swing"></section>
+      <footer class="foot" id="foot"></footer>
+    </main>
+    <div class="toasts" id="toasts"></div>
+    <script type="module" src="js/app.js"></script>
+  </body>
+</html>

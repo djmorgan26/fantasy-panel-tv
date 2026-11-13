@@ -1,0 +1,19 @@
+# Personal data: never commit
+.private/
+config.local.json
+*.local.json
+
+# Build outputs and caches
+dist/
+.keystore/
+.adb/
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/app/src/main/assets/web/
+node_modules/
+tools/node_modules/
+test-results/
+playwright-report/
+.DS_Store

@@ -1,0 +1,27 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Unit tests
+        run: docker compose --profile tools run --rm test
+
+  apk:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the TV app (lint included)
+        run: |
+          mkdir -p .keystore
+          docker compose --profile tools run --rm apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fantasy-panel-apk
+          path: dist/fantasy-panel.apk

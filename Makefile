@@ -1,0 +1,86 @@
+# Fantasy Panel for Google TV. Every target runs in Docker.
+# Run `make` for the list. TV targets talk to the TV only through the adb container.
+
+COMPOSE := docker compose --profile tools
+# Use LOCAL=1 to drive the TV with an adb already installed and paired on this computer.
+ifeq ($(LOCAL),1)
+TVCMD := sh scripts/tv.sh
+else
+TVCMD := $(COMPOSE) run --rm adb
+endif
+
+.DEFAULT_GOAL := help
+.PHONY: help preview test shots shots-live brand apk hooks check-private \
+        tv-pair tv-status tv-install tv-config tv-show tv-hide tv-open tv-shot tv-logs tv-uninstall setup down
+
+help: ## Show this list
+	@grep -hE '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  \033[1m%-15s\033[0m %s\n", $$1, $$2}'
+
+preview: ## Live preview at http://localhost:8080/preview.html?demo=1 (add ?config=local after make preview ALLOW_LOCAL_CONFIG=1)
+	ALLOW_LOCAL_CONFIG=$(ALLOW_LOCAL_CONFIG) docker compose up web
+
+test: ## Unit tests for the scoring and win-probability maths
+	$(COMPOSE) run --rm test
+
+shots: ## Playwright screenshots of the demo at 1920x1080 into docs/screenshots
+	docker compose up -d --force-recreate web
+	$(COMPOSE) run --rm shots
+
+shots-live: ## Screenshots with YOUR leagues into .private/shots (never committed)
+	ALLOW_LOCAL_CONFIG=1 docker compose up -d --force-recreate web
+	SHOOT_LIVE=1 $(COMPOSE) run --rm shots
+	docker compose up -d --force-recreate web
+
+brand: ## Re-render the TV banner and icon from tools/brand/brand.html
+	docker compose up -d --force-recreate web
+	BRAND=1 $(COMPOSE) run --rm shots
+
+apk: ## Build the Android TV app into dist/fantasy-panel.apk
+	@mkdir -p .keystore
+	$(COMPOSE) run --rm apk
+
+hooks: ## Install the git hook that blocks personal data from commits
+	@printf '#!/bin/sh\nexec sh scripts/check-private.sh\n' > .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
+	@echo "pre-commit privacy check installed"
+
+check-private: ## Scan every tracked file for values from config.local.json
+	@sh scripts/check-private.sh --all
+
+tv-pair: ## Pair the adb container with the TV: make tv-pair PAIR=ip:port CODE=123456
+	@mkdir -p .adb
+	$(TVCMD) pair $(PAIR) $(CODE)
+
+tv-status: ## What is on the TV: model, app installed, permission, panel state
+	@$(TVCMD) status
+
+tv-install: apk ## Build, install, grant the overlay permission, send your settings
+	@$(TVCMD) install
+	@$(TVCMD) config
+
+tv-config: ## Re-send config.local.json to the TV
+	@$(TVCMD) config
+
+tv-show: ## Show the panel
+	@$(TVCMD) show
+
+tv-hide: ## Hide the panel
+	@$(TVCMD) hide
+
+tv-open: ## Toggle the panel exactly like "Hey Google, open Fantasy Football"
+	@$(TVCMD) open
+
+tv-shot: ## Screenshot the TV into .private/shots
+	@$(TVCMD) shot
+
+tv-logs: ## Recent panel logs from the TV
+	@$(TVCMD) logs
+
+tv-uninstall: ## Remove the app and everything it stored. Nothing else on the TV changes.
+	@$(TVCMD) uninstall
+
+setup: hooks ## First run: copy the example config and install the privacy hook
+	@[ -f config.local.json ] || cp config.example.json config.local.json
+	@echo "Edit config.local.json, then: make tv-pair PAIR=... CODE=... && make tv-install"
+
+down: ## Stop the preview server
+	docker compose down

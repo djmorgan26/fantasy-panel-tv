@@ -1,0 +1,23 @@
+{
+  "sleeper": {
+    "username": "your_sleeper_username",
+    "leagueIds": []
+  },
+  "espn": [
+    {
+      "leagueId": 123456,
+      "teamId": 1,
+      "espn_s2": "",
+      "swid": ""
+    }
+  ],
+  "panel": {
+    "side": "right",
+    "width": 0.26,
+    "rotateSeconds": 15
+  },
+  "tv": {
+    "host": "192.168.1.50",
+    "port": 5555
+  }
+}

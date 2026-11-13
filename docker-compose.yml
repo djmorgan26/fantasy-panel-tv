@@ -1,0 +1,79 @@
+# Everything runs in containers. Nothing is installed on your computer, and
+# the only thing that ever touches your TV is the `adb` service, which can
+# install, configure, show/hide, and uninstall this one app. See SAFETY.md.
+
+services:
+  # Local preview of the panel: http://localhost:8080/preview.html?demo=1
+  web:
+    image: node:22.11.0-alpine
+    working_dir: /repo
+    command: node tools/serve.mjs
+    environment:
+      - PORT=8080
+      - ROOT=/repo
+      - ALLOW_LOCAL_CONFIG=${ALLOW_LOCAL_CONFIG:-0}
+    volumes:
+      - ./:/repo:ro
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/index.html"]
+      interval: 2s
+      retries: 15
+
+  # Unit tests for the scoring and win-probability maths.
+  test:
+    image: node:22.11.0-alpine
+    working_dir: /repo
+    command: sh -c "node --test tests/unit/*.test.mjs"
+    volumes:
+      - ./:/repo:ro
+    profiles: ["tools"]
+
+  # Playwright screenshots at 1920x1080 (demo by default; SHOOT_LIVE=1 for yours).
+  shots:
+    image: mcr.microsoft.com/playwright:v1.49.1-noble
+    working_dir: /repo
+    command: sh -c "npm install --no-save --no-audit --no-fund --prefix /deps playwright@1.49.1 >/dev/null && node tools/shoot.mjs"
+    environment:
+      - BASE_URL=http://web:8080
+      - SHOOT_LIVE=${SHOOT_LIVE:-0}
+      - BRAND=${BRAND:-0}
+      - TZ=${TZ:-America/New_York}
+    volumes:
+      - ./:/repo
+      - shots-deps:/deps
+    depends_on:
+      web:
+        condition: service_healthy
+    profiles: ["tools"]
+
+  # Builds the Android TV app. Output: dist/fantasy-panel.apk
+  apk:
+    build:
+      context: docker/android
+    platform: linux/amd64
+    working_dir: /repo
+    command: sh scripts/build-apk.sh
+    volumes:
+      - ./:/repo
+      - gradle-cache:/root/.gradle
+      - ./.keystore:/root/.android
+    profiles: ["tools"]
+
+  # The one door to the TV. Talks adb over Wi-Fi with its own key in ./.adb
+  # (generated on first run, never committed). Pair once: make tv-pair
+  adb:
+    build:
+      context: docker/adb
+    platform: linux/amd64
+    working_dir: /repo
+    entrypoint: ["sh", "scripts/tv.sh"]
+    volumes:
+      - ./:/repo
+      - ./.adb:/root/.android
+    profiles: ["tools"]
+
+volumes:
+  shots-deps:
+  gradle-cache:
