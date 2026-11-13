@@ -55,10 +55,19 @@ function wpTone(p) {
   return p >= 0.6 ? 'good' : p <= 0.4 ? 'bad' : '';
 }
 
+// Nothing has kicked off for either side yet.
+export const isPregame = (m) =>
+  !m.slots.some((s) => [s.me, s.opp].some((p) => p && (p.state === 'in' || p.state === 'post')));
+
 function focusCard(m) {
   const pct = Math.round(m.winProb * 100);
-  const meLead = m.me.score >= m.opp.score;
-  const meta = m.done
+  const pre = isPregame(m);
+  const meVal = pre ? m.me.proj : m.me.score;
+  const oppVal = pre ? m.opp.proj : m.opp.score;
+  const meLead = meVal >= oppVal;
+  const meta = pre
+    ? `<span>Projected</span><span><b>${m.me.left}</b> to play vs ${m.opp.left}</span>`
+    : m.done
     ? `<span>${m.me.score > m.opp.score ? 'Won' : m.me.score < m.opp.score ? 'Lost' : 'Tied'}</span>`
     : `<span>Proj <b>${fmt1(m.me.proj)}</b> - ${fmt1(m.opp.proj)}</span><span><b>${m.me.left + m.me.playing}</b> left vs ${m.opp.left + m.opp.playing}</span>`;
   return `
@@ -66,11 +75,11 @@ function focusCard(m) {
         <div class="mu-head"><span class="mu-league">${esc(m.league)}</span><span class="mu-platform">${esc(m.platform)}</span></div>
         <div class="mu-row me${meLead ? ' lead' : ''}">
           <div class="mu-team"><span class="mu-name">${esc(m.me.name)}</span><span class="mu-rec">${esc(m.me.record)}</span></div>
-          ${num(`${m.key}:me`, m.me.score, 'mu-score')}
+          ${num(`${m.key}:me${pre ? ':p' : ''}`, meVal, `mu-score${pre ? ' proj' : ''}`)}
         </div>
         <div class="mu-row opp${!meLead ? ' lead' : ''}">
           <div class="mu-team"><span class="mu-name">${esc(m.opp.name)}</span><span class="mu-rec">${esc(m.opp.record)}</span></div>
-          ${num(`${m.key}:opp`, m.opp.score, 'mu-score')}
+          ${num(`${m.key}:opp${pre ? ':p' : ''}`, oppVal, `mu-score${pre ? ' proj' : ''}`)}
         </div>
         <div class="wp"><div class="wp-track"><div class="wp-fill ${wpTone(m.winProb)}" style="width:${pct}%"></div></div><span class="wp-pct">${pct}%</span></div>
         <div class="mu-meta">${meta}</div>
@@ -79,10 +88,11 @@ function focusCard(m) {
 
 function compactRow(m) {
   const pct = Math.round(m.winProb * 100);
+  const pre = isPregame(m);
   return `
       <div class="mini">
         <div class="mini-l"><div class="mini-league">${esc(m.league)}</div><div class="mini-teams">${esc(m.me.name)} <span>vs</span> ${esc(m.opp.name)}</div></div>
-        <div class="mini-score">${num(`${m.key}:me:mini`, m.me.score)}<span class="mini-sep">-</span>${num(`${m.key}:opp:mini`, m.opp.score, 'mini-opp')}</div>
+        <div class="mini-score${pre ? ' proj' : ''}">${num(`${m.key}:me:mini${pre ? ':p' : ''}`, pre ? m.me.proj : m.me.score)}<span class="mini-sep">-</span>${num(`${m.key}:opp:mini${pre ? ':p' : ''}`, pre ? m.opp.proj : m.opp.score, 'mini-opp')}</div>
         <div class="mini-wp ${wpTone(m.winProb)}">${pct}%</div>
       </div>`;
 }

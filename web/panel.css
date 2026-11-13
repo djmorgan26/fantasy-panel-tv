@@ -73,6 +73,9 @@ body.left .panel { border-left: 0; border-right: 1px solid var(--hair); }
 .mu-score { font-size: 34px; font-weight: 650; letter-spacing: -0.03em; line-height: 1.12; }
 .mu-row.opp .mu-score { color: var(--text-2); font-weight: 550; }
 .mu-row.lead .mu-score { color: var(--text); }
+.mu-score.proj { font-weight: 500; letter-spacing: -0.02em; }
+.mu-row.me .mu-score.proj { color: var(--text); }
+.mini-score.proj { font-weight: 500; }
 
 .wp { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
 .wp-track { flex: 1; height: 4px; border-radius: 2px; background: rgba(255, 255, 255, 0.1); overflow: hidden; }

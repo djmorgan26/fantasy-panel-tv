@@ -48,7 +48,7 @@ if (process.env.BRAND === '1') {
   await mkdir('docs/screenshots', { recursive: true });
   problems.push(...(await shot('/preview.html?demo=1&minute=34', 'docs/screenshots/tv-live.png')));
   problems.push(...(await shot('/preview.html?demo=1&minute=34&toast=1', 'docs/screenshots/tv-big-play.png', { wait: 1500 })));
-  problems.push(...(await shot('/preview.html?demo=1&minute=-5', 'docs/screenshots/tv-pregame.png')));
+  problems.push(...(await shot('/preview.html?demo=1&minute=-200', 'docs/screenshots/tv-pregame.png')));
   problems.push(...(await shot('/preview.html?demo=1&minute=40', 'docs/screenshots/panel-closeup.png', { clip: panelClip })));
 } else {
   await mkdir('.private/shots', { recursive: true });
