@@ -98,6 +98,23 @@ up switches to the small card (and the other way round).
 `config.local.json` is git-ignored, and `make hooks` installs a pre-commit check
 that refuses any commit containing a value from it.
 
+## Voice without Gemini (Siri fallback)
+
+Some Google TVs now route "Hey Google" to Gemini, which may answer
+"open Fantasy Football" as a question instead of opening a sideloaded app.
+Siri can trigger the panel instead, through your computer:
+
+1. Open the **Shortcuts** app on your Mac and create a shortcut named
+   **Fantasy Football**.
+2. Add a **Run Shell Script** action:
+   `cd ~/fantasy-panel-tv && /usr/bin/make tv-open` (use your clone's path;
+   add `MODE=mini` for a second shortcut named **Fantasy Scores**).
+3. Say **"Hey Siri, Fantasy Football"** on the Mac, or on an iPhone, Apple Watch
+   or HomePod signed in to the same Apple account (they run Mac shortcuts
+   while the Mac is awake).
+
+Say it again to close the panel, the same as the TV command.
+
 ## Commands
 
 | | |
