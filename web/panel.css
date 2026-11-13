@@ -102,6 +102,7 @@ body.left .panel { border-left: 0; border-right: 1px solid var(--hair); }
 .pl-name { font-size: 15px; font-weight: 550; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pl.r .pl-name { font-weight: 500; color: var(--text-2); }
 .pl-sub { font-size: 11px; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
+.pl-sub .rzp { color: #ff453a; font-weight: 700; letter-spacing: 0.02em; }
 .pl-sub .inj { color: #ff9f0a; font-weight: 600; }
 .pl-sub .on { color: var(--live); font-weight: 600; }
 .ldot { display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: var(--live); margin-right: 5px; vertical-align: 1px; }

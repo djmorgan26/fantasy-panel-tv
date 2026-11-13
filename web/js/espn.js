@@ -2,7 +2,7 @@
 // espn_s2 and SWID cookies, which the proxy (TV app or dev server) attaches.
 // Page script never sees them.
 import { fetchJson, ESPN_PRO_TEAMS, shortName } from './util.js';
-import { gameLabel, playerState } from './nfl.js';
+import { gameLabel, playerState, inRedZone } from './nfl.js';
 import { buildMatchup } from './model.js';
 
 const BASE = 'https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons';
@@ -18,10 +18,14 @@ const BENCH = new Set([20, 21, 24]);
 const injuryLabel = (s) =>
   !s || s === 'ACTIVE' || s === 'NORMAL' ? null : s.replace('_', ' ').toLowerCase().replace(/^\w/, (c) => c.toUpperCase());
 
-export function espnUrl(season, leagueId, week) {
-  const views = ['mMatchupScore', 'mScoreboard', 'mTeam', 'mSettings'].map((v) => `view=${v}`).join('&');
-  return `${BASE}/${season}/segments/0/leagues/${leagueId}?${views}&scoringPeriodId=${week}`;
+export function espnUrl(season, leagueId, week, views) {
+  const v = views.map((x) => `view=${x}`).join('&');
+  return `${BASE}/${season}/segments/0/leagues/${leagueId}?${v}&scoringPeriodId=${week}`;
 }
+
+// Team names, records and lineup settings change rarely: refresh every 30 min.
+const meta = new Map();
+const META_MS = 30 * 60 * 1000;
 
 export function parseEspn(data, teamId, nfl) {
   const week = data.scoringPeriodId;
@@ -51,6 +55,7 @@ export function parseEspn(data, teamId, nfl) {
       state,
       remaining: nfl.games[team]?.remaining ?? (state === 'bye' ? 0 : 1),
       label: gameLabel(nfl, team),
+      redZone: inRedZone(nfl, team),
       injury: injuryLabel(entry.injuryStatus || p.injuryStatus),
     };
   };
@@ -100,7 +105,20 @@ export async function loadEspn(entries, nfl) {
   for (const e of entries || []) {
     if (!e?.leagueId || !e?.teamId) continue;
     const season = e.season || nfl.season;
-    const data = await fetchJson(espnUrl(season, e.leagueId, nfl.week), { timeoutMs: 20000 });
+    const key = `${season}:${e.leagueId}`;
+    let info = meta.get(key);
+    if (!info || Date.now() - info.at > META_MS) {
+      const d = await fetchJson(espnUrl(season, e.leagueId, nfl.week, ['mTeam', 'mSettings']));
+      info = { at: Date.now(), teams: d.teams, settings: d.settings, period: d.status?.currentMatchupPeriod };
+      meta.set(key, info);
+    }
+    // Live part: only this week's matchups, about half the bytes of the full league.
+    const period = info.period ?? nfl.week;
+    const live = await fetchJson(espnUrl(season, e.leagueId, nfl.week, ['mScoreboard', 'mMatchupScore']), {
+      timeoutMs: 20000,
+      filter: { schedule: { filterMatchupPeriodIds: { value: [period] } } },
+    });
+    const data = { ...live, teams: info.teams, settings: info.settings };
     const m = parseEspn(data, Number(e.teamId), nfl);
     if (m) out.push(m);
   }

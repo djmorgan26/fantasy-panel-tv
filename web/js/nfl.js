@@ -91,6 +91,12 @@ export function gameLabel(nfl, team) {
   return `${q} ${g.clock} ${opp}`;
 }
 
+// True when this player's team has the ball inside the opponent's 20.
+export function inRedZone(nfl, team) {
+  const g = team && nfl.games[team];
+  return !!(g && g.state === 'in' && g.redZone && g.possession === team);
+}
+
 export function playerState(nfl, team) {
   const g = team && nfl.games[team];
   if (!g) return nfl.bye?.has(team) ? 'bye' : 'none';

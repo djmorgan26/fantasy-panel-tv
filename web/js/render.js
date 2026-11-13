@@ -113,6 +113,7 @@ function playerCell(p, side) {
   let sub = esc(p.label || p.team || '');
   if (p.state === 'in') sub = `<span class="on"><i class="ldot"></i>${sub}</span>`;
   if (p.injury) sub = `<span class="inj">${esc(p.injury)}</span> · ${sub}`;
+  if (p.redZone) sub = `<span class="rzp">Red zone</span> ${sub}`;
   return `<div class="pl ${side}"><div class="pl-name">${esc(p.short)}</div><div class="pl-sub">${sub}</div></div>`;
 }
 
@@ -193,7 +194,9 @@ export function renderSwing(rows) {
             : g.state === 'half'
               ? 'Halftime'
               : `${g.period > 4 ? 'OT' : 'Q' + g.period} ${g.clock}`;
-        const who = [...r.mine.slice(0, 3)].join(', ') || 'Opponents only';
+        const mine = r.mine.slice(0, 2).join(', ');
+        const theirs = r.theirs.slice(0, 2).join(', ');
+        const who = mine && theirs ? `${mine} vs ${theirs}` : mine || `vs ${theirs}`;
         const tone = r.impact > 0 ? 'good' : 'bad';
         const sign = r.impact > 0 ? '+' : '−';
         return `<div class="game"><div><div class="game-teams">${teams}${g.redZone ? '<span class="rz">RED ZONE</span>' : ''}</div><div class="game-sub">${esc(when)} · ${esc(who)}</div></div><div class="game-imp ${tone}">${sign}${fmt1(Math.abs(r.impact))}<small>${r.impact > 0 ? 'your edge' : 'their edge'}</small></div></div>`;

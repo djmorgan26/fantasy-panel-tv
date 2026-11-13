@@ -113,7 +113,7 @@ export function createDemo({ startMinute = 34, speed = 4 } = {}) {
         homeScore: Math.round(p * (17 + r() * 17)),
         awayScore: Math.round(p * (14 + r() * 17)),
         possession: state === 'in' ? (Math.floor(sim / 3) % 2 ? g.home : g.away) : null,
-        redZone: state === 'in' && Math.floor(sim) % 11 === 0,
+        redZone: state === 'in' && (i === 2 || Math.floor(sim) % 11 === 0),
         remaining: 1 - p,
       };
       games[g.home] = game;
@@ -162,6 +162,7 @@ export function createDemo({ startMinute = 34, speed = 4 } = {}) {
           remaining: g ? g.remaining : 0,
           label,
           injury: name === 'Mark Andrews' ? 'Questionable' : null,
+          redZone: !!(g && g.state === 'in' && g.redZone && g.possession === team),
         };
       };
       return buildMatchup({

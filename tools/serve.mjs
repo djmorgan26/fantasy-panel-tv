@@ -15,7 +15,7 @@ const TYPES = {
 const DATA_HOSTS = new Set(['api.sleeper.app', 'lm-api-reads.fantasy.espn.com', 'site.api.espn.com']);
 
 // Same allowlisted proxy the TV app implements natively.
-async function proxy(target, res) {
+async function proxy(target, filter, res) {
   let u;
   try {
     u = new URL(target);
@@ -24,6 +24,7 @@ async function proxy(target, res) {
   }
   if (u.protocol !== 'https:' || !DATA_HOSTS.has(u.hostname)) return res.writeHead(403).end('host not allowed');
   const headers = { accept: 'application/json' };
+  if (filter && u.hostname.endsWith('espn.com')) headers['x-fantasy-filter'] = filter;
   if (u.hostname.endsWith('espn.com') && process.env.ALLOW_LOCAL_CONFIG === '1') {
     try {
       const cfg = JSON.parse(await readFile(join(ROOT, 'config.local.json'), 'utf8'));
@@ -45,7 +46,7 @@ async function proxy(target, res) {
 
 createServer(async (req, res) => {
   const url = new URL(req.url, 'http://x');
-  if (url.pathname === '/proxy') return proxy(url.searchParams.get('u'), res);
+  if (url.pathname === '/proxy') return proxy(url.searchParams.get('u'), url.searchParams.get('f'), res);
   let path = decodeURIComponent(url.pathname);
   let file;
   if (path === '/' || path === '') path = '/index.html';

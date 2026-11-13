@@ -1,6 +1,6 @@
 // Sleeper adapter. Uses only Sleeper's public read-only API: no login, no token.
 import { fetchJson, normTeam, shortName, cacheGet, cacheSet } from './util.js';
-import { gameLabel, playerState } from './nfl.js';
+import { gameLabel, playerState, inRedZone } from './nfl.js';
 import { buildMatchup } from './model.js';
 
 const API = 'https://api.sleeper.app/v1';
@@ -132,6 +132,7 @@ export async function loadSleeper(cfg, nfl) {
         state,
         remaining: nfl.games[team]?.remaining ?? (state === 'bye' ? 0 : 1),
         label: gameLabel(nfl, team),
+        redZone: inRedZone(nfl, team),
         injury: pr.injury && pr.injury !== 'Active' ? pr.injury : null,
       };
     };

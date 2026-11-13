@@ -6,8 +6,11 @@
 // browser CORS rules never apply and nothing else can be fetched.
 export const DATA_HOSTS = ['api.sleeper.app', 'lm-api-reads.fantasy.espn.com', 'site.api.espn.com'];
 
-export const proxied = (url) =>
-  typeof location !== 'undefined' && /^https?:$/.test(location.protocol) ? `proxy?u=${encodeURIComponent(url)}` : url;
+// `filter` becomes ESPN's x-fantasy-filter header, the only header the proxy forwards.
+export const proxied = (url, filter) =>
+  typeof location !== 'undefined' && /^https?:$/.test(location.protocol)
+    ? `proxy?u=${encodeURIComponent(url)}${filter ? `&f=${encodeURIComponent(JSON.stringify(filter))}` : ''}`
+    : url;
 
 export async function fetchJson(url, opts = {}) {
   try {
@@ -19,11 +22,16 @@ export async function fetchJson(url, opts = {}) {
   }
 }
 
-async function fetchOnce(url, { timeoutMs = 12000 } = {}) {
+async function fetchOnce(url, { timeoutMs = 12000, filter } = {}) {
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
-    const res = await fetch(proxied(url), { signal: ctrl.signal, cache: 'no-store' });
+    const direct = !/^https?:$/.test(globalThis.location?.protocol || '');
+    const res = await fetch(proxied(url, filter), {
+      signal: ctrl.signal,
+      cache: 'no-store',
+      headers: direct && filter ? { 'x-fantasy-filter': JSON.stringify(filter) } : undefined,
+    });
     if (!res.ok) throw new Error(`${res.status} ${new URL(url).host}`);
     return await res.json();
   } finally {

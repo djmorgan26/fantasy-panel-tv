@@ -353,7 +353,9 @@ public class OverlayService extends Service {
         public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest req) {
             if (!ORIGIN_HOST.equals(req.getUrl().getHost())) return null;
             String path = req.getUrl().getPath();
-            if ("/proxy".equals(path)) return proxy(req.getUrl().getQueryParameter("u"));
+            if ("/proxy".equals(path)) {
+                return proxy(req.getUrl().getQueryParameter("u"), req.getUrl().getQueryParameter("f"));
+            }
             if (path == null || path.equals("/") || path.isEmpty()) path = "/index.html";
             if (path.contains("..")) return notFound();
             String ext = path.substring(path.lastIndexOf('.') + 1);
@@ -374,7 +376,7 @@ public class OverlayService extends Service {
          * Fetches score data natively for the page (this runs on a WebView
          * background thread). Only https and only the allowlisted hosts.
          */
-        private WebResourceResponse proxy(String target) {
+        private WebResourceResponse proxy(String target, String filter) {
             HttpURLConnection c = null;
             try {
                 URL u = new URL(target);
@@ -387,6 +389,7 @@ public class OverlayService extends Service {
                 c.setInstanceFollowRedirects(false);
                 c.setRequestProperty("Accept", "application/json");
                 if (u.getHost().endsWith("espn.com")) {
+                    if (filter != null && filter.length() < 2000) c.setRequestProperty("x-fantasy-filter", filter);
                     String cookie = CookieManager.getInstance().getCookie(target);
                     if (cookie != null) c.setRequestProperty("Cookie", cookie);
                 }
