@@ -96,6 +96,11 @@ case "$cmd" in
     connect
     $ADB logcat -d -s FantasyPanel:V chromium:W AndroidRuntime:E | tail -n "${LINES:-60}"
     ;;
+  watch)
+    # Stream panel events live (Ctrl-C to stop): handy while testing voice commands.
+    connect
+    $ADB logcat -T 1 -s FantasyPanel:I
+    ;;
   memory)
     connect
     $ADB shell dumpsys meminfo "$PKG" | grep -E "TOTAL PSS|TOTAL RSS" | head -3 || echo "not running"
@@ -109,6 +114,6 @@ case "$cmd" in
     if installed; then $ADB uninstall "$PKG"; echo "removed. Nothing else on the TV was changed."; else echo "not installed"; fi
     ;;
   *)
-    echo "usage: tv.sh pair|status|install|config|show|hide|toggle|open|reload|shot|logs|memory|foreground|uninstall"
+    echo "usage: tv.sh pair|status|install|config|show|hide|toggle|open|reload|shot|logs|watch|memory|foreground|uninstall"
     ;;
 esac

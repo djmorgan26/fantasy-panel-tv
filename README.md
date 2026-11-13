@@ -69,6 +69,10 @@ make tv-install                          # build, install, send your settings
 
 Then say **"Hey Google, open Fantasy Football"**. Or `make tv-open`.
 
+**Closing it:** say the same thing again, or press **Home** on the remote. It also
+closes itself when the TV goes to sleep. "Fantasy Scores" while the full panel is
+up switches to the small card (and the other way round).
+
 ### Config
 
 ```json

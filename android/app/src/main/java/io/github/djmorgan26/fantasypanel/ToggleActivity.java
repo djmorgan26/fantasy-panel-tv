@@ -18,6 +18,8 @@ public class ToggleActivity extends Activity {
         if (Settings.canDrawOverlays(this)) {
             String cls = getIntent().getComponent() != null ? getIntent().getComponent().getClassName() : "";
             String mode = cls.endsWith("ScoresAlias") ? OverlayService.MODE_MINI : OverlayService.MODE_FULL;
+            android.util.Log.i(OverlayService.TAG, "launched: " + cls.substring(cls.lastIndexOf('.') + 1)
+                    + " from " + getReferrer());
             OverlayService.send(this, OverlayService.ACTION_TOGGLE, mode);
         } else {
             startActivity(new Intent(this, SetupActivity.class));

@@ -14,7 +14,7 @@ TVCMD := $(COMPOSE) run --rm adb
 endif
 
 .DEFAULT_GOAL := help
-.PHONY: tv-find help preview test e2e shots shots-live brand apk hooks check-private \
+.PHONY: tv-watch tv-find help preview test e2e shots shots-live brand apk hooks check-private \
         tv-pair tv-status tv-install tv-config tv-show tv-hide tv-open tv-shot tv-logs tv-uninstall setup down
 
 help: ## Show this list
@@ -84,6 +84,9 @@ tv-shot: ## Screenshot the TV into .private/shots
 
 tv-logs: ## Recent panel logs from the TV
 	@$(TVCMD) logs
+
+tv-watch: ## Stream panel events live while you try the voice commands
+	@$(TVCMD) watch
 
 tv-uninstall: ## Remove the app and everything it stored. Nothing else on the TV changes.
 	@$(TVCMD) uninstall

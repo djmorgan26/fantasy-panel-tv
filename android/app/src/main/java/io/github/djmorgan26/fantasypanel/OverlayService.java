@@ -80,12 +80,26 @@ public class OverlayService extends Service {
     private String mode = MODE_FULL;
     private WindowManager.LayoutParams params;
 
-    /** The TV went to sleep: close the panel so nothing lingers. */
+    /**
+     * Closes the panel when the TV goes to sleep, or when Home is pressed
+     * (the system announces that as CLOSE_SYSTEM_DIALOGS with reason
+     * "homekey"). We only listen; Home still goes home as usual.
+     */
+    private static final String CLOSE_DIALOGS = "android.intent.action.CLOSE_SYSTEM_DIALOGS";
     private final BroadcastReceiver screenOff = new BroadcastReceiver() {
         @Override
         public void onReceive(Context c, Intent i) {
-            Log.i(TAG, "screen off, closing panel");
-            hide();
+            if (Intent.ACTION_SCREEN_OFF.equals(i.getAction())) {
+                Log.i(TAG, "close: screen off");
+                hide();
+            } else if (CLOSE_DIALOGS.equals(i.getAction())) {
+                String reason = i.getStringExtra("reason");
+                Log.i(TAG, "system dialogs closed, reason=" + reason);
+                if ("homekey".equals(reason)) {
+                    Log.i(TAG, "close: home pressed");
+                    hide();
+                }
+            }
         }
     };
     private boolean screenOffRegistered = false;
@@ -115,6 +129,7 @@ public class OverlayService extends Service {
         goForeground();
         String action = intent != null && intent.getAction() != null ? intent.getAction() : ACTION_TOGGLE;
         String wanted = intent != null && MODE_MINI.equals(intent.getStringExtra(EXTRA_MODE)) ? MODE_MINI : MODE_FULL;
+        Log.i(TAG, "command " + action + " (" + wanted + "), panel " + (webView == null ? "hidden" : "showing " + mode));
         if (!Settings.canDrawOverlays(this)) {
             Log.w(TAG, "overlay permission missing");
             stopEverything();
@@ -172,7 +187,7 @@ public class OverlayService extends Service {
         show(wanted);
     }
 
-    @SuppressLint({"SetJavaScriptEnabled", "JavascriptInterface"})
+    @SuppressLint({"SetJavaScriptEnabled", "JavascriptInterface", "UnspecifiedRegisterReceiverFlag"})
     private void show(String wanted) {
         mode = wanted;
         if (!getSystemService(PowerManager.class).isInteractive()) {
@@ -259,6 +274,7 @@ public class OverlayService extends Service {
         showing = true;
         if (!screenOffRegistered) {
             IntentFilter f = new IntentFilter(Intent.ACTION_SCREEN_OFF);
+            f.addAction(CLOSE_DIALOGS);
             if (Build.VERSION.SDK_INT >= 33) registerReceiver(screenOff, f, Context.RECEIVER_NOT_EXPORTED);
             else registerReceiver(screenOff, f);
             screenOffRegistered = true;
@@ -267,6 +283,7 @@ public class OverlayService extends Service {
     }
 
     private void hide() {
+        Log.i(TAG, "hiding panel");
         if (webView == null) {
             stopEverything();
             return;
