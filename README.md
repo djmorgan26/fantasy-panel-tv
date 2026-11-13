@@ -108,7 +108,8 @@ Siri can trigger the panel instead, through your computer:
    **Fantasy Football**.
 2. Add a **Run Shell Script** action:
    `cd ~/fantasy-panel-tv && /usr/bin/make tv-open` (use your clone's path;
-   add `MODE=mini` for a second shortcut named **Fantasy Scores**).
+   add `MODE=mini` for a second shortcut named **Fantasy Scores**, and `LOCAL=1`
+   if you drive the TV with your computer's own adb rather than the container).
 3. Say **"Hey Siri, Fantasy Football"** on the Mac, or on an iPhone, Apple Watch
    or HomePod signed in to the same Apple account (they run Mac shortcuts
    while the Mac is awake).
