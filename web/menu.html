@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="data:," />
+    <!-- Laid out on a 1280 CSS px wide screen; the TV scales it to fit. -->
+    <meta name="viewport" content="width=1280, user-scalable=no" />
+    <title>Fantasy Menu</title>
+    <link rel="stylesheet" href="menu.css" />
+  </head>
+  <body>
+    <aside class="sheet" id="sheet" aria-label="Fantasy Football menu">
+      <header class="head">
+        <div class="eyebrow">Fantasy Football</div>
+        <h1 id="title">Loading</h1>
+        <div class="status" id="status"></div>
+      </header>
+      <div class="scroll" id="scroll"><div id="list" role="menu"></div></div>
+      <footer class="hint" id="hint"><span class="key">◀ ▶</span> sections &nbsp;&nbsp;<span class="key">Back</span> close menu, keep panel</footer>
+    </aside>
+    <div class="note" id="note" role="status"></div>
+    <script type="module" src="js/menu.js"></script>
+  </body>
+</html>

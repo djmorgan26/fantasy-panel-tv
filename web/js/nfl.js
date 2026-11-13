@@ -43,6 +43,18 @@ export function parseScoreboard(sb) {
         c.competitors.find((x) => x.id === c.situation?.possession)?.team?.abbreviation
       ),
       redZone: !!c.situation?.isRedZone,
+      // For "watch this game": who is carrying it, and the names streaming
+      // apps use in their listings ("Kansas City Chiefs", "Chiefs").
+      networks: [
+        ...new Set([
+          ...(c.broadcasts || []).flatMap((b) => b.names || []),
+          ...(c.geoBroadcasts || []).map((b) => b.media?.shortName).filter(Boolean),
+        ]),
+      ],
+      homeName: home.team.shortDisplayName || home.team.name || '',
+      awayName: away.team.shortDisplayName || away.team.name || '',
+      homeFull: home.team.displayName || '',
+      awayFull: away.team.displayName || '',
     };
     g.remaining = remainingFraction(state, g.period, g.clock);
     games[g.home] = g;

@@ -26,6 +26,8 @@
       .dock.left { left: 0; right: auto; }
       .dock iframe { border: 0; background: transparent; transform-origin: top left; display: block; }
       .dock.mini { bottom: auto; }
+      /* The remote-driven menu, full screen under the panel like on the TV. */
+      #menu { position: fixed; top: 0; left: 0; border: 0; background: transparent; transform-origin: top left; display: none; }
     </style>
   </head>
   <body>
@@ -33,6 +35,7 @@
       <div class="players" id="players"></div>
       <div class="bug"><span class="a">KC 17</span><span class="b">BUF 21</span><span class="c">3rd · 8:42</span></div>
     </div>
+    <iframe id="menu" title="Fantasy menu"></iframe>
     <div class="dock" id="dock"><iframe id="panel" title="Fantasy panel"></iframe></div>
     <script>
       const q = new URLSearchParams(location.search);
@@ -45,7 +48,15 @@
       if (mini) dock.classList.add('mini');
       const inner = new URLSearchParams(q);
       inner.delete('width');
+      const withMenu = inner.get('menu') === '1';
+      inner.delete('menu');
       frame.src = 'index.html?' + inner.toString();
+      const menu = document.getElementById('menu');
+      if (withMenu) {
+        menu.style.display = 'block';
+        menu.src = 'menu.html?' + inner.toString();
+        menu.addEventListener('load', () => menu.contentWindow.focus());
+      }
       // Same maths as the Android app: lay out at 480 CSS px, scale to the dock.
       function fit() {
         const w = Math.round(innerWidth * width);
@@ -55,6 +66,11 @@
         frame.style.height = (mini ? 300 : innerHeight / s) + 'px';
         if (mini) { dock.style.top = dock.style.right = Math.round(w * 0.06) + 'px'; dock.style.height = 300 * s + 'px'; }
         frame.style.transform = `scale(${s})`;
+        // The menu lays out on a 1280 CSS px screen, like the TV app does.
+        const ms = innerWidth / 1280;
+        menu.style.width = '1280px';
+        menu.style.height = innerHeight / ms + 'px';
+        menu.style.transform = `scale(${ms})`;
       }
       fit();
       addEventListener('resize', fit);

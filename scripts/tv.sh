@@ -70,7 +70,7 @@ case "$cmd" in
     [ -f "$CFG" ] || die "no $CFG"
     # The TV's clock zone may be wrong; default the panel to this computer's.
     payload=$(jq -c --arg tz "${HOST_TZ:-}" --arg loc "${HOST_LOCALE:-}" '
-      {sleeper, espn, panel: ((.panel // {})
+      {sleeper, espn, watch, panel: ((.panel // {})
         + (if (.panel.timeZone // "") == "" and $tz != "" then {timeZone: $tz} else {} end)
         + (if (.panel.locale // "") == "" and $loc != "" then {locale: $loc} else {} end))}' "$CFG" | b64)
     res=$($ADB shell am broadcast -a "$PKG.CONFIG" -n "$PKG/.ControlReceiver" --es b64 "$payload")
@@ -83,11 +83,18 @@ case "$cmd" in
     echo "$cmd sent${MODE:+ ($MODE)}"
     ;;
   open)
-    # Same path as "Hey Google, open Fantasy Football".
+    # Same as picking the tile on the TV: "Fantasy Football" opens the menu
+    # (and the panel); MODE=mini is "Fantasy Scores", which toggles the card.
     connect
     if [ "${MODE:-full}" = mini ]; then comp="$PKG/.ScoresAlias"; else comp="$PKG/.ToggleActivity"; fi
     $ADB shell am start -n "$comp" >/dev/null
-    echo "opened (toggles the panel)"
+    if [ "${MODE:-full}" = mini ]; then echo "toggled the score card"; else echo "opened the menu"; fi
+    ;;
+  focus)
+    # Pin the panel to one league (KEY from the menu or tv-logs), or KEY=all.
+    connect
+    $ADB shell am broadcast -a "$PKG.FOCUS" -n "$PKG/.ControlReceiver" --es key "${KEY:-all}" >/dev/null
+    echo "panel shows: ${KEY:-all}"
     ;;
   shot)
     connect
@@ -118,6 +125,6 @@ case "$cmd" in
     if installed; then $ADB uninstall "$PKG"; echo "removed. Nothing else on the TV was changed."; else echo "not installed"; fi
     ;;
   *)
-    echo "usage: tv.sh pair|status|install|config|show|hide|toggle|open|reload|shot|logs|watch|memory|foreground|uninstall"
+    echo "usage: tv.sh pair|status|install|config|show|hide|toggle|open|focus|reload|shot|logs|watch|memory|foreground|uninstall"
     ;;
 esac

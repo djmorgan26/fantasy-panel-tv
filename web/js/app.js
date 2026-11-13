@@ -1,9 +1,8 @@
 // Panel main loop: load config, refresh on a live-aware cadence, render,
 // rotate the lineup view, and pop toasts for big plays.
-import { loadNfl } from './nfl.js';
-import { loadSleeper } from './sleeper.js';
-import { loadEspn } from './espn.js';
 import { swingGames, scoringEvents } from './model.js';
+import { loadConfig, liveSource, packSnapshot } from './source.js';
+import { pinned } from './watch.js';
 import { createDemo } from './demo.js';
 import { setClock } from './util.js';
 import {
@@ -25,48 +24,36 @@ function reportHeight() {
 const params = new URLSearchParams(location.search);
 const SEC = 1000;
 
-async function loadConfig() {
-  // 1. Inside the TV app, config comes from the native bridge.
-  try {
-    const raw = window.FFNative?.getConfig?.();
-    if (raw) return JSON.parse(raw);
-  } catch (e) {
-    console.warn('native config unreadable', e);
-  }
-  // 2. A local dev server may serve the private config file.
-  if (params.get('config') === 'local') {
-    try {
-      const res = await fetch('config.local.json', { cache: 'no-store' });
-      if (res.ok) return await res.json();
-    } catch {
-      /* fall through */
-    }
-  }
-  return null;
-}
-
-function liveSource(cfg) {
-  return {
-    async load() {
-      const nfl = await loadNfl();
-      const errors = [];
-      const results = await Promise.allSettled([loadSleeper(cfg.sleeper, nfl), loadEspn(cfg.espn, nfl)]);
-      const matchups = [];
-      results.forEach((r, i) => {
-        if (r.status === 'fulfilled') matchups.push(...r.value);
-        else errors.push(`${i === 0 ? 'Sleeper' : 'ESPN'} unavailable`);
-      });
-      return { nfl, matchups, errors };
-    },
-  };
-}
-
 const state = {
   matchups: null,
   nfl: null,
   rotateIndex: 0,
   focusUntil: 0,
   rotateMs: 15 * SEC,
+  // 'all' rotates through every league; a matchup key pins that one.
+  focus: 'all',
+};
+
+function readFocus() {
+  try {
+    const f = window.FFNative?.getFocus?.();
+    if (f) return f;
+  } catch {
+    /* not in the TV app */
+  }
+  return params.get('focus') || 'all';
+}
+
+// What the panel shows right now: every league, or just the pinned one.
+const shownMatchups = () => pinned(state.matchups || [], state.focus);
+
+// The menu calls this (through the TV app) when you pick a team to show.
+window.ffFocus = () => {
+  state.focus = readFocus();
+  state.rotateIndex = 0;
+  state.focusUntil = 0;
+  console.info(`focus: ${state.focus}`);
+  draw();
 };
 
 function nextDelay(nfl, demo) {
@@ -80,10 +67,11 @@ function nextDelay(nfl, demo) {
 const MINI = params.get('mode') === 'mini';
 
 function draw() {
-  const ms = state.matchups || [];
+  const ms = shownMatchups();
   if (!ms.length) return;
   if (MINI) {
     renderMini(ms);
+    document.body.classList.toggle('pinned', state.focus !== 'all' && ms.length === 1 && state.matchups.length > 1);
     reportHeight();
     return;
   }
@@ -91,13 +79,15 @@ function draw() {
   renderMatchups(ms, ms[i].key);
   renderLineup(ms[i], i, ms.length);
   renderSwing(swingGames(ms, state.nfl));
+  document.body.classList.toggle('pinned', state.focus !== 'all' && ms.length === 1 && state.matchups.length > 1);
 }
 
 async function tick(source, demo) {
   let delay = 30 * SEC;
   try {
     const { nfl, matchups, errors } = await source.load();
-    const events = scoringEvents(state.matchups, matchups);
+    const visible = new Set(pinned(matchups, state.focus).map((m) => m.key));
+    const events = scoringEvents(state.matchups, matchups).filter((e) => visible.has(e.matchupKey));
     state.nfl = nfl;
     state.matchups = matchups;
     renderHeader(nfl, matchups);
@@ -110,7 +100,7 @@ async function tick(source, demo) {
     } else {
       // Jump to the league where something just happened.
       if (events.length) {
-        const idx = matchups.findIndex((m) => m.key === events[0].matchupKey);
+        const idx = shownMatchups().findIndex((m) => m.key === events[0].matchupKey);
         if (idx >= 0) {
           state.rotateIndex = idx;
           state.focusUntil = Date.now() + state.rotateMs * 2;
@@ -120,6 +110,13 @@ async function tick(source, demo) {
       if (!MINI) events.slice(0, 3).forEach((e, k) => setTimeout(() => showToast(e), k * 600));
     }
     renderFoot(new Date(), errors);
+    if (!demo || params.has('publish')) {
+      try {
+        window.FFNative?.publish?.(packSnapshot(nfl, matchups));
+      } catch {
+        /* not in the TV app */
+      }
+    }
     delay = nextDelay(nfl, demo);
     console.info(
       `refresh ok: ${matchups.length} matchup(s) [${matchups.map((m) => `${m.league} ${m.me.score.toFixed(1)}-${m.opp.score.toFixed(1)} ${Math.round(m.winProb * 100)}%`).join('; ')}] live=${!!nfl.anyLive} next=${Math.round(delay / 1000)}s errors=${errors.join(',') || 'none'}`
@@ -134,8 +131,9 @@ async function tick(source, demo) {
 
 function rotate() {
   setInterval(() => {
-    if (!state.matchups || state.matchups.length < 2 || Date.now() < state.focusUntil) return;
-    state.rotateIndex = (state.rotateIndex + 1) % state.matchups.length;
+    const n = shownMatchups().length;
+    if (n < 2 || Date.now() < state.focusUntil) return;
+    state.rotateIndex = (state.rotateIndex + 1) % n;
     draw();
   }, state.rotateMs);
 }
@@ -145,7 +143,8 @@ async function main() {
   if (params.get('side') === 'left') document.body.classList.add('left');
   if (params.get('solid')) document.body.classList.add('solid');
   const demo = params.has('demo');
-  const cfg = demo ? null : await loadConfig();
+  const cfg = demo ? null : await loadConfig(params);
+  state.focus = readFocus();
   if (cfg?.panel?.side === 'left') document.body.classList.add('left');
   setClock(params.get('locale') || cfg?.panel?.locale, params.get('tz') || cfg?.panel?.timeZone);
   if (cfg?.panel?.rotateSeconds) state.rotateMs = Math.max(5, cfg.panel.rotateSeconds) * SEC;

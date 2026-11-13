@@ -10,7 +10,6 @@ import android.content.BroadcastReceiver;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.ServiceInfo;
-import android.graphics.Color;
 import android.graphics.PixelFormat;
 import android.graphics.Rect;
 import android.os.Build;
@@ -22,29 +21,10 @@ import android.view.Display;
 import android.view.Gravity;
 import android.view.WindowManager;
 import android.view.animation.DecelerateInterpolator;
-import android.webkit.ConsoleMessage;
-import android.webkit.CookieManager;
 import android.webkit.JavascriptInterface;
-import android.webkit.RenderProcessGoneDetail;
-import android.webkit.WebResourceRequest;
-import android.webkit.WebResourceResponse;
-import android.webkit.WebChromeClient;
-import android.webkit.WebSettings;
 import android.webkit.WebView;
-import android.webkit.WebViewClient;
 
-import org.json.JSONArray;
 import org.json.JSONObject;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Hosts the panel: a WebView in a non-focusable, non-touchable overlay window
@@ -58,20 +38,19 @@ public class OverlayService extends Service {
     static final String ACTION_HIDE = "hide";
     static final String ACTION_TOGGLE = "toggle";
     static final String ACTION_RELOAD = "reload";
+    static final String ACTION_FOCUS = "focus";
     static final String MODE_FULL = "full";
     static final String MODE_MINI = "mini";
     private static final String EXTRA_MODE = "mode";
     /** The page lays itself out at this many CSS px wide. */
     private static final double DESIGN_WIDTH = 480.0;
 
-    private static final String ORIGIN_HOST = "panel.local";
-    private static final String ORIGIN = "https://" + ORIGIN_HOST + "/";
     private static final String CHANNEL = "panel";
-    private static final Set<String> DATA_HOSTS = new HashSet<>(Arrays.asList(
-            "api.sleeper.app", "lm-api-reads.fantasy.espn.com", "site.api.espn.com"));
     private static final int NOTIFICATION_ID = 1;
 
     private static volatile boolean showing = false;
+    private static volatile String shownMode = MODE_FULL;
+    private static volatile String snapshot = null;
 
     private WindowManager windowManager;
     private WebView webView;
@@ -108,13 +87,21 @@ public class OverlayService extends Service {
         return showing;
     }
 
+    static String shownMode() {
+        return shownMode;
+    }
+
+    static String snapshot() {
+        return showing ? snapshot : null;
+    }
+
     static void send(Context ctx, String action) {
         send(ctx, action, MODE_FULL);
     }
 
     static void send(Context ctx, String action, String mode) {
         Intent i = new Intent(ctx, OverlayService.class).setAction(action).putExtra(EXTRA_MODE, mode);
-        if (ACTION_HIDE.equals(action) && !showing) return;
+        if ((ACTION_HIDE.equals(action) || ACTION_FOCUS.equals(action)) && !showing) return;
         ctx.startForegroundService(i);
     }
 
@@ -143,9 +130,14 @@ public class OverlayService extends Service {
             case ACTION_HIDE:
                 hide();
                 break;
+            case ACTION_FOCUS:
+                // The menu pinned a league (or went back to all): tell the page.
+                if (webView != null) webView.evaluateJavascript("window.ffFocus && window.ffFocus()", null);
+                else stopEverything();
+                break;
             case ACTION_RELOAD:
                 if (webView != null) {
-                    applyCookies();
+                    WebHost.applyCookies(this);
                     webView.reload();
                 } else {
                     stopEverything();
@@ -219,33 +211,9 @@ public class OverlayService extends Service {
         }
         panelWidth = (int) Math.round(screenWidth * widthFrac);
 
-        webView = new WebView(ctx);
-        webView.setBackgroundColor(Color.TRANSPARENT);
+        webView = WebHost.create(ctx, this::rendererGone);
         webView.setFocusable(false);
-        webView.setVerticalScrollBarEnabled(false);
-        webView.setHorizontalScrollBarEnabled(false);
-        WebSettings s = webView.getSettings();
-        s.setJavaScriptEnabled(true);
-        s.setDomStorageEnabled(true);
-        s.setUseWideViewPort(true);
-        s.setLoadWithOverviewMode(true);
-        s.setAllowFileAccess(false);
-        s.setAllowContentAccess(false);
-        s.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
-        s.setSupportZoom(false);
-        s.setMediaPlaybackRequiresUserGesture(true);
-        CookieManager.getInstance().setAcceptCookie(true);
-        CookieManager.getInstance().setAcceptThirdPartyCookies(webView, true);
-        applyCookies();
         webView.addJavascriptInterface(new Bridge(), "FFNative");
-        webView.setWebViewClient(new AssetClient());
-        webView.setWebChromeClient(new WebChromeClient() {
-            @Override
-            public boolean onConsoleMessage(ConsoleMessage m) {
-                Log.i(TAG, "page: " + m.message());
-                return true;
-            }
-        });
 
         boolean mini = MODE_MINI.equals(mode);
         int margin = mini ? (int) Math.round(panelWidth * 0.06) : 0;
@@ -271,10 +239,12 @@ public class OverlayService extends Service {
         webView.setTranslationX(leftSide ? -panelWidth : panelWidth);
         webView.setAlpha(0f);
         windowManager.addView(webView, lp);
-        webView.loadUrl(ORIGIN + "index.html" + (mini ? "?mode=mini" : ""));
+        webView.loadUrl(WebHost.ORIGIN + "index.html" + (mini ? "?mode=mini" : ""));
         webView.animate().translationX(0).alpha(1f).setDuration(420)
                 .setInterpolator(new DecelerateInterpolator(2.2f)).start();
         showing = true;
+        shownMode = mode;
+        Prefs.setMode(this, mode);
         if (!screenOffRegistered) {
             IntentFilter f = new IntentFilter(Intent.ACTION_SCREEN_OFF);
             f.addAction(CLOSE_DIALOGS);
@@ -313,8 +283,15 @@ public class OverlayService extends Service {
         v.destroy();
     }
 
+    private void rendererGone(WebView view) {
+        if (view == webView) webView = null;
+        destroyView(view);
+        stopEverything();
+    }
+
     private void stopEverything() {
         showing = false;
+        snapshot = null;
         if (screenOffRegistered) {
             unregisterReceiver(screenOff);
             screenOffRegistered = false;
@@ -337,26 +314,7 @@ public class OverlayService extends Service {
         super.onDestroy();
     }
 
-    /** ESPN private leagues: hand the user's cookies to the WebView only. */
-    private void applyCookies() {
-        JSONObject cfg = Prefs.config(this);
-        if (cfg == null) return;
-        JSONArray espn = cfg.optJSONArray("espn");
-        if (espn == null) return;
-        CookieManager cm = CookieManager.getInstance();
-        for (int i = 0; i < espn.length(); i++) {
-            JSONObject e = espn.optJSONObject(i);
-            if (e == null) continue;
-            String s2 = e.optString("espn_s2", "");
-            String swid = e.optString("swid", "");
-            String attrs = "; Domain=.espn.com; Path=/; Secure; SameSite=None";
-            if (!s2.isEmpty()) cm.setCookie("https://lm-api-reads.fantasy.espn.com", "espn_s2=" + s2 + attrs);
-            if (!swid.isEmpty()) cm.setCookie("https://lm-api-reads.fantasy.espn.com", "SWID=" + swid + attrs);
-        }
-        cm.flush();
-    }
-
-    /** Read-only bridge: the page can read its config and size the mini card. */
+    /** The panel page can read its settings, size the mini card, and share its latest data. */
     private class Bridge {
         @JavascriptInterface
         public void setContentHeight(final int cssPx) {
@@ -376,124 +334,19 @@ public class OverlayService extends Service {
 
         @JavascriptInterface
         public String getConfig() {
-            JSONObject cfg = Prefs.config(OverlayService.this);
-            if (cfg == null) return null;
-            try {
-                // Cookies never need to reach page script; the WebView sends them.
-                JSONObject copy = new JSONObject(cfg.toString());
-                JSONArray espn = copy.optJSONArray("espn");
-                if (espn != null) {
-                    for (int i = 0; i < espn.length(); i++) {
-                        JSONObject e = espn.optJSONObject(i);
-                        if (e == null) continue;
-                        boolean priv = !e.optString("espn_s2", "").isEmpty();
-                        e.remove("espn_s2");
-                        e.remove("swid");
-                        if (priv) e.put("espn_s2", "set");
-                    }
-                }
-                copy.remove("tv");
-                return copy.toString();
-            } catch (Exception e) {
-                return null;
-            }
-        }
-    }
-
-    /** Serves the bundled panel from https://panel.local/ so it has a real origin. */
-    private class AssetClient extends WebViewClient {
-        private final Map<String, String> types = new HashMap<>();
-
-        AssetClient() {
-            types.put("html", "text/html");
-            types.put("js", "text/javascript");
-            types.put("css", "text/css");
-            types.put("json", "application/json");
-            types.put("woff2", "font/woff2");
-            types.put("png", "image/png");
-            types.put("svg", "image/svg+xml");
+            return WebHost.publicConfig(OverlayService.this);
         }
 
-        @Override
-        public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest req) {
-            if (!ORIGIN_HOST.equals(req.getUrl().getHost())) return null;
-            String path = req.getUrl().getPath();
-            if ("/proxy".equals(path)) {
-                return proxy(req.getUrl().getQueryParameter("u"), req.getUrl().getQueryParameter("f"));
-            }
-            if (path == null || path.equals("/") || path.isEmpty()) path = "/index.html";
-            if (path.contains("..")) return notFound();
-            String ext = path.substring(path.lastIndexOf('.') + 1);
-            try {
-                InputStream in = getAssets().open("web" + path);
-                WebResourceResponse r = new WebResourceResponse(
-                        types.getOrDefault(ext, "application/octet-stream"), "utf-8", in);
-                Map<String, String> h = new HashMap<>();
-                h.put("Cache-Control", "no-cache");
-                r.setResponseHeaders(h);
-                return r;
-            } catch (IOException e) {
-                return notFound();
-            }
+        /** The league you pinned from the menu, or "all". */
+        @JavascriptInterface
+        public String getFocus() {
+            return Prefs.focus(OverlayService.this);
         }
 
-        /**
-         * Fetches score data natively for the page (this runs on a WebView
-         * background thread). Only https and only the allowlisted hosts.
-         */
-        private WebResourceResponse proxy(String target, String filter) {
-            HttpURLConnection c = null;
-            try {
-                URL u = new URL(target);
-                if (!"https".equals(u.getProtocol()) || !DATA_HOSTS.contains(u.getHost())) {
-                    return error(403, "Forbidden");
-                }
-                c = (HttpURLConnection) u.openConnection();
-                c.setConnectTimeout(10000);
-                c.setReadTimeout(20000);
-                c.setInstanceFollowRedirects(false);
-                c.setRequestProperty("Accept", "application/json");
-                if (u.getHost().endsWith("espn.com")) {
-                    if (filter != null && filter.length() < 2000) c.setRequestProperty("x-fantasy-filter", filter);
-                    String cookie = CookieManager.getInstance().getCookie(target);
-                    if (cookie != null) c.setRequestProperty("Cookie", cookie);
-                }
-                int code = c.getResponseCode();
-                InputStream body = code < 400 ? c.getInputStream() : c.getErrorStream();
-                Map<String, String> h = new HashMap<>();
-                h.put("Cache-Control", "no-store");
-                String reason = c.getResponseMessage();
-                return new WebResourceResponse("application/json", "utf-8", code,
-                        reason == null || reason.isEmpty() ? "OK" : reason, h, body);
-            } catch (Exception e) {
-                Log.w(TAG, "proxy failed: " + e.getClass().getSimpleName());
-                if (c != null) c.disconnect();
-                return error(502, "Bad Gateway");
-            }
-        }
-
-        private WebResourceResponse error(int code, String reason) {
-            return new WebResourceResponse("text/plain", "utf-8", code, reason, new HashMap<>(), null);
-        }
-
-        private WebResourceResponse notFound() {
-            return new WebResourceResponse("text/plain", "utf-8", 404, "Not Found", new HashMap<>(), null);
-        }
-
-        @Override
-        public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest req) {
-            return true; // the panel never navigates anywhere
-        }
-
-        @Override
-        public boolean onRenderProcessGone(WebView view, RenderProcessGoneDetail detail) {
-            // A crashed or reclaimed renderer must never take the app (or the
-            // TV's foreground app) down with it. Just close the panel.
-            Log.w(TAG, "renderer gone, closing panel");
-            if (view == webView) webView = null;
-            destroyView(view);
-            stopEverything();
-            return true;
+        /** The panel's latest data, kept in memory so the menu opens instantly. */
+        @JavascriptInterface
+        public void publish(String json) {
+            if (json != null && json.length() < 1_000_000) snapshot = json;
         }
     }
 }

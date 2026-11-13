@@ -80,8 +80,14 @@ tv-show: ## Show the panel (MODE=mini for the score card)
 tv-hide: ## Hide the panel
 	@$(TVCMD) hide
 
-tv-open: ## Toggle exactly like "Hey Google, open Fantasy Football" (MODE=mini: "Fantasy Scores")
+tv-toggle: ## Show or hide the panel without the menu (for Siri shortcuts; MODE=mini for the card)
+	@MODE=$(MODE) $(TVCMD) toggle
+
+tv-open: ## Open the menu like the Fantasy Football tile (MODE=mini: toggle the Fantasy Scores card)
 	@MODE=$(MODE) $(TVCMD) open
+
+tv-focus: ## Pin the panel to one league: make tv-focus KEY=espn:123 (KEY=all to rotate)
+	@KEY=$(KEY) $(TVCMD) focus
 
 tv-shot: ## Screenshot the TV into .private/shots
 	@$(TVCMD) shot

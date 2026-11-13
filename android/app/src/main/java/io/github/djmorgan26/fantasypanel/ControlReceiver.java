@@ -47,6 +47,12 @@ public class ControlReceiver extends BroadcastReceiver {
             case P + "TOGGLE":
                 if (Settings.canDrawOverlays(ctx)) OverlayService.send(ctx, OverlayService.ACTION_TOGGLE, mode(intent));
                 break;
+            case P + "FOCUS":
+                // make tv-focus KEY=...: pin a league ("all" to rotate again).
+                Prefs.setFocus(ctx, intent.getStringExtra("key"));
+                Log.i(OverlayService.TAG, "focus " + Prefs.focus(ctx));
+                OverlayService.send(ctx, OverlayService.ACTION_FOCUS);
+                break;
             case P + "RELOAD":
                 if (OverlayService.isShowing()) OverlayService.send(ctx, OverlayService.ACTION_RELOAD);
                 break;

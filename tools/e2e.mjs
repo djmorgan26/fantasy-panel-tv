@@ -76,6 +76,73 @@ await check('score card mode shows only one row per league', async (p) => {
   assert.ok(await p.evaluate(() => document.body.classList.contains('card')));
 });
 
+await check('menu opens on your first live game and moves with the remote', async (p) => {
+  await p.goto(`${BASE}/menu.html?demo=1&minute=34`);
+  await p.waitForFunction(() => document.querySelectorAll('.item').length > 5);
+  const first = p.locator('.item.focus');
+  assert.match(await first.textContent(), /KC .*BUF/, 'live game with your players first');
+  assert.match(await first.textContent(), /YouTube TV/);
+  const firstId = await first.getAttribute('data-id');
+  await p.keyboard.press('ArrowDown');
+  assert.notEqual(await p.locator('.item.focus').getAttribute('data-id'), firstId);
+  await p.keyboard.press('ArrowUp');
+  await p.keyboard.press('ArrowUp');
+  assert.match(await p.locator('.item.focus').textContent(), /KC .*BUF/, 'stops at the top');
+  await p.keyboard.press('ArrowRight');
+  assert.match(await p.locator('.item.focus').textContent(), /All leagues/, 'Right jumps to the next section');
+  await p.keyboard.press('ArrowLeft');
+  assert.match(await p.locator('.item.focus').textContent(), /KC .*BUF/, 'Left jumps back');
+});
+
+await check('selecting a game asks the TV to open it in the right app', async (p) => {
+  await p.goto(`${BASE}/menu.html?demo=1&minute=34`);
+  await p.waitForFunction(() => document.querySelectorAll('.item').length > 5);
+  await p.keyboard.press('Enter');
+  let calls = await p.evaluate(() => window.__menuCalls);
+  assert.deepEqual(calls[0], ['watch', 'youtubetv', 'Kansas City Chiefs at Buffalo Bills']);
+  // The Thursday-style streaming game goes to Prime Video instead.
+  const prime = p.locator('.item', { hasText: 'Prime Video' }).first();
+  await prime.click();
+  calls = await p.evaluate(() => window.__menuCalls);
+  assert.deepEqual(calls.at(-1), ['watch', 'prime', 'Vikings vs. Rams']);
+});
+
+await check('a streaming app that is not installed says so instead of failing', async (p) => {
+  await p.goto(`${BASE}/menu.html?demo=1&minute=34&missing=youtubetv`);
+  await p.waitForFunction(() => document.querySelectorAll('.item').length > 5);
+  await p.keyboard.press('Enter');
+  assert.deepEqual(await p.evaluate(() => window.__menuCalls), []);
+  assert.match(await p.textContent('#note'), /isn.t installed/);
+});
+
+await check('pinning a league from the menu, and back to all', async (p) => {
+  await p.goto(`${BASE}/menu.html?demo=1&minute=34`);
+  await p.waitForFunction(() => document.querySelectorAll('.item').length > 5);
+  await p.locator('.item', { hasText: 'Office League' }).click();
+  assert.deepEqual((await p.evaluate(() => window.__menuCalls)).at(-1), ['setFocus', 'demo:espn']);
+  assert.ok(await p.locator('.item.on', { hasText: 'Office League' }).count());
+  assert.equal(await p.locator('.item.on', { hasText: 'All leagues' }).count(), 0);
+  await p.locator('.item', { hasText: 'All leagues' }).click();
+  assert.deepEqual((await p.evaluate(() => window.__menuCalls)).at(-1), ['setFocus', 'all']);
+});
+
+await check('hide panel closes the panel and the menu', async (p) => {
+  await p.goto(`${BASE}/menu.html?demo=1&minute=34`);
+  await p.waitForFunction(() => document.querySelectorAll('.item').length > 5);
+  await p.locator('.item', { hasText: 'Hide panel' }).click();
+  assert.deepEqual((await p.evaluate(() => window.__menuCalls)).slice(-2), [['setMode', 'hide'], ['close']]);
+});
+
+await check('a pinned panel shows only that league and does not rotate', async (p) => {
+  await p.goto(`${BASE}/index.html?demo=1&focus=demo:espn&rotate=1`);
+  await p.waitForSelector('.mu-league');
+  assert.equal(await p.textContent('.mu-league'), 'Office League');
+  assert.equal(await p.locator('.mini').count(), 0, 'no other league rows');
+  assert.ok(await p.evaluate(() => document.body.classList.contains('pinned')));
+  await p.waitForTimeout(2500);
+  assert.equal(await p.textContent('.mu-league'), 'Office League');
+});
+
 await check('without settings it explains the next step', async (p) => {
   await p.goto(`${BASE}/index.html`);
   await p.waitForSelector('.message');

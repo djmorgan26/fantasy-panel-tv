@@ -1,12 +1,18 @@
 # Fantasy Panel for Google TV
 
-Say **"Hey Google, open Fantasy Football"** and a quiet side panel slides in over
-whatever you are watching: your live fantasy score, win odds, a slot by slot
-lineup against your opponent, your other leagues, and the NFL games that swing
-your week the most. Say it again and it slides away.
+Open **Fantasy Football** on your TV and a quiet side panel slides in: your
+live fantasy score, win odds, a slot by slot lineup against your opponent, your
+other leagues, and the NFL games that swing your week the most. Next to it, a
+menu you drive with the remote:
 
-Watching a tight game and want less on screen? Say **"Hey Google, open Fantasy
-Scores"** for a small score card in the corner instead.
+- **Watch your games**: every live and upcoming game with your players in it.
+  Pick one and it opens in **YouTube TV** (or **Prime Video** on Thursdays),
+  with the panel still beside it.
+- **Show on the panel**: all your leagues in rotation, or pin just one team.
+- **Panel**: side panel, small score card, or hide.
+
+Watching a tight game and want less on screen? **Fantasy Scores** toggles a small
+score card in the corner without leaving what you are watching.
 
 Works with **Sleeper** and **ESPN** leagues, any number of them, on any Google TV
 or Android TV. Runs entirely in Docker on your computer: nothing to install
@@ -32,25 +38,32 @@ except Docker.
   </tr>
 </table>
 
+![The menu: watch a game, pin a league, switch the panel](docs/screenshots/tv-menu.png)
+
 <img src="docs/screenshots/tv-scores-card.png" width="640" alt="The compact score card">
 
 ## How it works
 
 ```
-"Hey Google, open Fantasy Football"
-        |
+"Fantasy Football" tile                       "Fantasy Scores" tile
+        |                                              |
+        v                                              v
+MenuActivity (remote-driven, Back closes)     toggles the score card
+        |            \
+        |             +--> Watch: YouTube TV / Prime Video search link for that game
         v
-ToggleActivity (invisible, closes at once so the game keeps playing)
-        |
-        v
-OverlayService: a non-focusable, non-touchable window docked to the side
+OverlayService: a non-focusable window docked to the side
         |
         v
 WebView running web/ : Sleeper API + ESPN fantasy API + NFL scoreboard
                        refreshed every 20 s while games are live
 ```
 
-- The panel never takes your remote. Input always goes to the app you are watching.
+- The panel never takes your remote. The menu has the remote only while it is
+  open; Back, Home, or picking a game hands it straight back.
+- "Watch" opens the streaming app's own search page for that game (for example
+  "Houston Texans at Cleveland Browns" in YouTube TV), which lists the game first.
+  You may see the app's "Who's watching?" screen first, as usual.
 - Nothing runs while the panel is hidden, and it closes itself when the TV sleeps.
 - No server, no account, no tracking. The TV talks straight to Sleeper and ESPN.
 
@@ -67,11 +80,13 @@ make tv-pair PAIR=192.168.1.50:37123 CODE=123456   # from "Pair device with pair
 make tv-install                          # build, install, send your settings
 ```
 
-Then say **"Hey Google, open Fantasy Football"**. Or `make tv-open`.
+Then open **Fantasy Football** from your apps row (or `make tv-open`). Up and
+Down move, OK selects, Left and Right jump between sections, Back closes the menu
+and leaves the panel up.
 
-**Closing it:** say the same thing again, or press **Home** on the remote. It also
-closes itself when the TV goes to sleep. "Fantasy Scores" while the full panel is
-up switches to the small card (and the other way round).
+**Closing it:** **Hide panel** in the menu, or press **Home** on the remote. It also
+closes itself when the TV goes to sleep. **Fantasy Scores** toggles the small card
+on and off, and switches to it when the full panel is up.
 
 ### Config
 
@@ -80,6 +95,7 @@ up switches to the small card (and the other way round).
   "sleeper": { "username": "you", "leagueIds": [] },
   "espn": [{ "leagueId": 123456, "teamId": 1, "espn_s2": "", "swid": "" }],
   "panel": { "side": "right", "width": 0.26, "rotateSeconds": 15 },
+  "watch": { "tv": "youtubetv" },
   "tv": { "host": "192.168.1.50", "port": 5555 }
 }
 ```
@@ -91,6 +107,11 @@ up switches to the small card (and the other way round).
 - **panel.timeZone / panel.locale** (for example `America/New_York`, `en-US`) set how
   kickoff times read. Leave them empty and your computer's are used, which matters
   because many TVs ship with their clock set to GMT.
+- **watch.tv** is the app that games on regular TV (CBS, FOX, NBC, ABC, ESPN, NFL
+  Network) open in: `youtubetv` (default) or `paramount`. Streaming-only games always
+  open in their own app (Prime Video, Netflix, Peacock, YouTube).
+- **Which league the panel shows** is picked from the menu and remembered on the TV.
+  `make tv-focus KEY=all` resets it.
 - **tv.port** is only a fallback. Pairing is permanent, and although the TV picks a
   new port whenever it reboots, `make` finds the current one on your network
   automatically (mDNS, `scripts/find-tv.sh`). You pair once and never again.
@@ -102,12 +123,12 @@ that refuses any commit containing a value from it.
 
 Some Google TVs now route "Hey Google" to Gemini, which may answer
 "open Fantasy Football" as a question instead of opening a sideloaded app.
-Siri can trigger the panel instead, through your computer:
+Siri can toggle the panel instead, through your computer:
 
 1. Open the **Shortcuts** app on your Mac and create a shortcut named
    **Fantasy Football**.
 2. Add a **Run Shell Script** action:
-   `cd ~/fantasy-panel-tv && /usr/bin/make tv-open` (use your clone's path;
+   `cd ~/fantasy-panel-tv && /usr/bin/make tv-toggle` (use your clone's path;
    add `MODE=mini` for a second shortcut named **Fantasy Scores**, and `LOCAL=1`
    if you drive the TV with your computer's own adb rather than the container).
 3. Say **"Hey Siri, Fantasy Football"** on the Mac, or on an iPhone, Apple Watch
@@ -122,12 +143,14 @@ Say it again to close the panel, the same as the TV command.
 | --- | --- |
 | `make preview` | Live preview at http://localhost:8080/preview.html?demo=1 |
 | `make test` | Unit tests |
-| `make e2e` | Playwright behaviour tests: scores tick, leagues rotate, big plays pop, proxy locked down |
+| `make e2e` | Playwright behaviour tests: scores tick, leagues rotate, big plays pop, the menu drives by remote and opens the right app, proxy locked down |
 | `make shots` | Playwright screenshots of the demo at 1920x1080 |
 | `make shots-live` | Screenshots with your own leagues, into `.private/` |
 | `make apk` | Build `dist/fantasy-panel.apk` |
 | `make tv-status` | Is it installed, permitted, showing? |
-| `make tv-show` / `tv-hide` / `tv-open` | Control the panel (`MODE=mini` for the score card) |
+| `make tv-open` | Open the menu, like the Fantasy Football tile |
+| `make tv-show` / `tv-hide` / `tv-toggle` | Control the panel (`MODE=mini` for the score card) |
+| `make tv-focus KEY=...` | Pin the panel to one league, or `KEY=all` |
 | `make tv-shot` | Screenshot the TV |
 | `make tv-uninstall` | Remove it completely |
 

@@ -14,13 +14,21 @@ function rng(seed) {
 
 // Kickoff offsets in simulated minutes. One game final, three live, two late.
 const GAMES = [
-  { home: 'PHI', away: 'DAL', offset: -95 },
-  { home: 'BUF', away: 'KC', offset: 0 },
-  { home: 'GB', away: 'DET', offset: 6 },
-  { home: 'CIN', away: 'BAL', offset: 12 },
-  { home: 'SEA', away: 'SF', offset: 75 },
-  { home: 'LAR', away: 'MIN', offset: 80 },
+  { home: 'PHI', away: 'DAL', offset: -95, net: 'Fox' },
+  { home: 'BUF', away: 'KC', offset: 0, net: 'CBS' },
+  { home: 'GB', away: 'DET', offset: 6, net: 'Fox' },
+  { home: 'CIN', away: 'BAL', offset: 12, net: 'CBS' },
+  { home: 'SEA', away: 'SF', offset: 75, net: 'Fox' },
+  { home: 'LAR', away: 'MIN', offset: 80, net: 'Prime Video' },
 ];
+
+const TEAM_NAMES = {
+  PHI: ['Philadelphia', 'Eagles'], DAL: ['Dallas', 'Cowboys'], BUF: ['Buffalo', 'Bills'],
+  KC: ['Kansas City', 'Chiefs'], GB: ['Green Bay', 'Packers'], DET: ['Detroit', 'Lions'],
+  CIN: ['Cincinnati', 'Bengals'], BAL: ['Baltimore', 'Ravens'], SEA: ['Seattle', 'Seahawks'],
+  SF: ['San Francisco', '49ers'], LAR: ['Los Angeles', 'Rams'], MIN: ['Minnesota', 'Vikings'],
+};
+const full = (t) => TEAM_NAMES[t].join(' ');
 
 const LEAGUES = [
   {
@@ -115,6 +123,11 @@ export function createDemo({ startMinute = 34, speed = 4 } = {}) {
         possession: state === 'in' ? (Math.floor(sim / 3) % 2 ? g.home : g.away) : null,
         redZone: state === 'in' && (i === 2 || Math.floor(sim) % 11 === 0),
         remaining: 1 - p,
+        networks: [g.net],
+        homeName: TEAM_NAMES[g.home][1],
+        awayName: TEAM_NAMES[g.away][1],
+        homeFull: full(g.home),
+        awayFull: full(g.away),
       };
       games[g.home] = game;
       games[g.away] = game;

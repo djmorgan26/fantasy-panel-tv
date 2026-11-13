@@ -32,6 +32,26 @@ final class Prefs {
         }
     }
 
+    /** Which league the panel shows: "all" (rotate) or one matchup key. */
+    static String focus(Context ctx) {
+        return prefs(ctx).getString("focus", "all");
+    }
+
+    static void setFocus(Context ctx, String key) {
+        if (key == null || key.isEmpty() || key.length() > 200) key = "all";
+        prefs(ctx).edit().putString("focus", key).apply();
+    }
+
+    /** The layout you used last: "full" (side panel) or "mini" (score card). */
+    static String mode(Context ctx) {
+        return OverlayService.MODE_MINI.equals(prefs(ctx).getString("mode", null))
+                ? OverlayService.MODE_MINI : OverlayService.MODE_FULL;
+    }
+
+    static void setMode(Context ctx, String mode) {
+        prefs(ctx).edit().putString("mode", mode).apply();
+    }
+
     private static SharedPreferences prefs(Context ctx) {
         return ctx.getSharedPreferences(FILE, Context.MODE_PRIVATE);
     }

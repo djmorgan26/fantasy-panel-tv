@@ -55,11 +55,13 @@ if (process.env.BRAND === '1') {
   problems.push(...(await shot('/preview.html?demo=1&minute=-200', 'docs/screenshots/tv-pregame.png')));
   problems.push(...(await shot('/preview.html?demo=1&minute=40', 'docs/screenshots/panel-closeup.png', { clip: panelClip })));
   problems.push(...(await shot('/preview.html?demo=1&minute=40&mode=mini', 'docs/screenshots/tv-scores-card.png')));
+  problems.push(...(await shot('/preview.html?demo=1&minute=34&menu=1', 'docs/screenshots/tv-menu.png')));
 } else {
   await mkdir('.private/shots', { recursive: true });
   problems.push(...(await shot('/preview.html?config=local', '.private/shots/tv-real.png', { wait: 9000 })));
   problems.push(...(await shot('/preview.html?config=local', '.private/shots/panel-real.png', { wait: 9000, clip: panelClip })));
   problems.push(...(await shot('/preview.html?config=local&mode=mini', '.private/shots/tv-scores-real.png', { wait: 9000 })));
+  problems.push(...(await shot('/preview.html?config=local&menu=1', '.private/shots/tv-menu-real.png', { wait: 9000 })));
 }
 
 await browser.close();

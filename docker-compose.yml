@@ -86,6 +86,7 @@ services:
     entrypoint: ["sh", "scripts/tv.sh"]
     environment:
       - MODE=${MODE:-full}
+      - KEY=${KEY:-}
       - TV=${TV:-}
       - HOST_TZ=${HOST_TZ:-}
       - HOST_LOCALE=${HOST_LOCALE:-}

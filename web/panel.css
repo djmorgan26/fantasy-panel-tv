@@ -193,3 +193,6 @@ body.card .mini + .mini { border-top: 1px solid var(--hair); }
 body.card .mini-league { font-size: 16px; }
 body.card .mini-score { font-size: 24px; }
 body.card .toasts { display: none; }
+
+/* A league pinned from the menu: say so, quietly. */
+body.pinned .mu-platform::after { content: ' · Pinned'; }

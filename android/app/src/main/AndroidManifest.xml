@@ -10,6 +10,16 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
 
     <uses-feature android:name="android.software.leanback" android:required="false" />
+
+    <!-- The streaming apps "Watch" can open a game in. Nothing else is visible to us. -->
+    <queries>
+        <package android:name="com.google.android.youtube.tvunplugged" />
+        <package android:name="com.amazon.amazonvideo.livingroom" />
+        <package android:name="com.google.android.youtube.tv" />
+        <package android:name="com.netflix.ninja" />
+        <package android:name="com.peacocktv.peacockandroid" />
+        <package android:name="com.cbs.ott" />
+    </queries>
     <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
 
     <application
@@ -21,8 +31,8 @@
         android:supportsRtl="true"
         android:usesCleartextTraffic="false">
 
-        <!-- "Hey Google, open Fantasy Football" lands here. It shows or hides
-             the panel and closes at once, so the game keeps playing. -->
+        <!-- The "Fantasy Football" tile. It opens the menu below, with the
+             panel beside it. -->
         <activity
             android:name=".ToggleActivity"
             android:excludeFromRecents="true"
@@ -37,7 +47,8 @@
             </intent-filter>
         </activity>
 
-        <!-- "Hey Google, open Fantasy Scores": the compact score card. -->
+        <!-- The "Fantasy Scores" tile: flips the corner score card on or off
+             without leaving what you are watching. -->
         <activity-alias
             android:name=".ScoresAlias"
             android:banner="@drawable/banner_scores"
@@ -49,6 +60,17 @@
                 <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
             </intent-filter>
         </activity-alias>
+
+        <!-- The remote-driven menu: watch a game, pick a league, switch the
+             panel. Focusable only while open; Back closes it. -->
+        <activity
+            android:name=".MenuActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:launchMode="singleTask"
+            android:noHistory="true"
+            android:taskAffinity="io.github.djmorgan26.fantasypanel.menu"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
 
         <!-- Shown only if the overlay permission is missing. -->
         <activity
@@ -79,6 +101,7 @@
                 <action android:name="io.github.djmorgan26.fantasypanel.HIDE" />
                 <action android:name="io.github.djmorgan26.fantasypanel.TOGGLE" />
                 <action android:name="io.github.djmorgan26.fantasypanel.RELOAD" />
+                <action android:name="io.github.djmorgan26.fantasypanel.FOCUS" />
             </intent-filter>
         </receiver>
     </application>

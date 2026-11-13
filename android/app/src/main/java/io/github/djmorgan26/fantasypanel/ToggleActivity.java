@@ -7,9 +7,10 @@ import android.os.Bundle;
 import android.provider.Settings;
 
 /**
- * The app's launcher entry ("Hey Google, open Fantasy Football"). It is
- * translucent and finishes immediately, so whatever you were watching stays
- * in front and keeps playing; it only flips the panel on or off.
+ * The launcher entries. "Fantasy Football" opens the menu (with the panel
+ * beside it). "Fantasy Scores" just flips the corner score card on or off:
+ * it is translucent and finishes at once, so whatever is playing stays in
+ * front and keeps playing.
  */
 public class ToggleActivity extends Activity {
     @Override
@@ -17,10 +18,14 @@ public class ToggleActivity extends Activity {
         super.onCreate(savedInstanceState);
         if (Settings.canDrawOverlays(this)) {
             String cls = getIntent().getComponent() != null ? getIntent().getComponent().getClassName() : "";
-            String mode = cls.endsWith("ScoresAlias") ? OverlayService.MODE_MINI : OverlayService.MODE_FULL;
+            boolean scores = cls.endsWith("ScoresAlias");
             android.util.Log.i(OverlayService.TAG, "launched: " + cls.substring(cls.lastIndexOf('.') + 1)
                     + " from " + getReferrer());
-            OverlayService.send(this, OverlayService.ACTION_TOGGLE, mode);
+            if (scores) {
+                OverlayService.send(this, OverlayService.ACTION_TOGGLE, OverlayService.MODE_MINI);
+            } else {
+                startActivity(new Intent(this, MenuActivity.class));
+            }
         } else {
             startActivity(new Intent(this, SetupActivity.class));
         }
