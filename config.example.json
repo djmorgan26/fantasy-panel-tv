@@ -14,7 +14,9 @@
   "panel": {
     "side": "right",
     "width": 0.26,
-    "rotateSeconds": 15
+    "rotateSeconds": 15,
+    "timeZone": "",
+    "locale": ""
   },
   "tv": {
     "host": "192.168.1.50",

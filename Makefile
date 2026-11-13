@@ -7,6 +7,10 @@ COMPOSE := docker compose --profile tools
 # Override with TV=ip:port. Pairing itself is permanent and never repeated.
 TV ?= $(shell sh scripts/find-tv.sh 2>/dev/null)
 export TV
+# Your computer's timezone and locale, used for kickoff times on the panel.
+HOST_TZ ?= $(shell sh scripts/host-clock.sh tz)
+HOST_LOCALE ?= $(shell sh scripts/host-clock.sh locale)
+export HOST_TZ HOST_LOCALE
 ifeq ($(LOCAL),1)
 TVCMD := sh scripts/tv.sh
 else

@@ -1,7 +1,7 @@
 // The live NFL slate from ESPN's public scoreboard. Every fantasy player is
 // joined to one of these games by team, which tells us whether he is yet to
 // play, playing now (and how much of his game is left), or done.
-import { fetchJson, normTeam } from './util.js';
+import { fetchJson, normTeam, fmtDayTime } from './util.js';
 
 const SCOREBOARD = 'https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard';
 
@@ -76,10 +76,7 @@ export function gameLabel(nfl, team) {
   if (!g) return nfl.bye?.has(team) ? 'Bye' : '';
   const opp = g.home === team ? `v ${g.away}` : `@ ${g.home}`;
   if (g.state === 'pre') {
-    const d = new Date(g.start);
-    const day = d.toLocaleDateString(undefined, { weekday: 'short' });
-    const time = d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
-    return `${day} ${time}`;
+    return fmtDayTime(g.start);
   }
   if (g.state === 'post') {
     const mine = g.home === team ? g.homeScore : g.awayScore;

@@ -1,6 +1,6 @@
 // DOM rendering. Plain template strings plus a tiny number tween, so a TV
 // with 2 GB of RAM does not pay for a framework.
-import { fmt1 } from './util.js';
+import { fmt1, fmtTime, fmtDayTime } from './util.js';
 
 const $ = (id) => document.getElementById(id);
 export const esc = (s) =>
@@ -45,8 +45,7 @@ export function renderHeader(nfl, matchups) {
   if (live) text = `Live · ${live} game${live > 1 ? 's' : ''}`;
   else if (matchups?.length && matchups.every((m) => m.done)) text = 'Final';
   else if (nfl?.nextKickoff) {
-    const d = new Date(nfl.nextKickoff);
-    text = `Kickoff ${d.toLocaleDateString(undefined, { weekday: 'short' })} ${d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}`;
+    text = `Kickoff ${fmtDayTime(nfl.nextKickoff)}`;
   } else text = 'No games';
   $('status').innerHTML = `<span class="dot${live ? ' live' : ''}"></span><span>${esc(text)}</span>`;
 }
@@ -210,7 +209,7 @@ export function renderSwing(rows) {
             : `${esc(g.away)}${poss(g.away)} ${g.awayScore} &nbsp;·&nbsp; ${esc(g.home)}${poss(g.home)} ${g.homeScore}`;
         const when =
           g.state === 'pre'
-            ? new Date(g.start).toLocaleString(undefined, { weekday: 'short', hour: 'numeric', minute: '2-digit' })
+            ? fmtDayTime(g.start)
             : g.state === 'half'
               ? 'Halftime'
               : `${g.period > 4 ? 'OT' : 'Q' + g.period} ${g.clock}`;
@@ -226,7 +225,7 @@ export function renderSwing(rows) {
 
 export function renderFoot(updatedAt, errors) {
   const t = updatedAt
-    ? `Updated ${updatedAt.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}`
+    ? `Updated ${fmtTime(updatedAt)}`
     : '';
   const warn = errors?.length ? `<span class="warn">${esc(errors[0])}</span>` : '<span></span>';
   $('foot').innerHTML = `${warn}<span>${esc(t)}</span>`;

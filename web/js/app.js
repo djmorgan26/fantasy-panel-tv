@@ -5,6 +5,7 @@ import { loadSleeper } from './sleeper.js';
 import { loadEspn } from './espn.js';
 import { swingGames, scoringEvents } from './model.js';
 import { createDemo } from './demo.js';
+import { setClock } from './util.js';
 import {
   renderHeader, renderMatchups, renderLineup, renderSwing, renderFoot, renderMessage, showToast, renderMini,
 } from './render.js';
@@ -146,6 +147,7 @@ async function main() {
   const demo = params.has('demo');
   const cfg = demo ? null : await loadConfig();
   if (cfg?.panel?.side === 'left') document.body.classList.add('left');
+  setClock(params.get('locale') || cfg?.panel?.locale, params.get('tz') || cfg?.panel?.timeZone);
   if (cfg?.panel?.rotateSeconds) state.rotateMs = Math.max(5, cfg.panel.rotateSeconds) * SEC;
   if (!demo && !cfg) {
     renderHeader(null, null);

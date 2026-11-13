@@ -61,6 +61,25 @@ export function shortName(full) {
   return `${parts[0][0]}. ${last}${suffix ? ' ' + suffix : ''}`;
 }
 
+// Time display. The TV's own clock can be set to the wrong zone (GMT is a
+// common default), so the panel uses panel.timeZone / panel.locale from your
+// config, filled in from your computer when settings are sent.
+let LOCALE;
+let TIME_ZONE;
+export function setClock(locale, timeZone) {
+  LOCALE = locale || undefined;
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone }).format(0);
+    TIME_ZONE = timeZone || undefined;
+  } catch {
+    TIME_ZONE = undefined;
+  }
+}
+const opts = (o) => (TIME_ZONE ? { ...o, timeZone: TIME_ZONE } : o);
+export const fmtTime = (d) => new Date(d).toLocaleTimeString(LOCALE, opts({ hour: 'numeric', minute: '2-digit' }));
+export const fmtDay = (d) => new Date(d).toLocaleDateString(LOCALE, opts({ weekday: 'short' }));
+export const fmtDayTime = (d) => `${fmtDay(d)} ${fmtTime(d)}`;
+
 export const round1 = (n) => Math.round((n || 0) * 10) / 10;
 export const fmt1 = (n) => (Math.round((n || 0) * 10) / 10).toFixed(1);
 

@@ -88,6 +88,9 @@ up switches to the small card (and the other way round).
 - **ESPN**: league id is in the league URL. Team id is the `teamId` in your team page URL.
   Private leagues also need the `espn_s2` and `SWID` cookies from espn.com in your
   browser. They are stored only on the TV and only ever sent to ESPN.
+- **panel.timeZone / panel.locale** (for example `America/New_York`, `en-US`) set how
+  kickoff times read. Leave them empty and your computer's are used, which matters
+  because many TVs ship with their clock set to GMT.
 - **tv.port** is only a fallback. Pairing is permanent, and although the TV picks a
   new port whenever it reboots, `make` finds the current one on your network
   automatically (mDNS, `scripts/find-tv.sh`). You pair once and never again.

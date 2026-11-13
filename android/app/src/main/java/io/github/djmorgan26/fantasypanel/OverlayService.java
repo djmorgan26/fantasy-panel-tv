@@ -254,8 +254,11 @@ public class OverlayService extends Service {
                 // The mini card starts small and is sized by the page (setContentHeight).
                 mini ? (int) Math.round(panelWidth * 0.4) : WindowManager.LayoutParams.MATCH_PARENT,
                 WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+                // NOT_FOCUSABLE: remote keys always go to the app you are watching.
+                // Deliberately not NOT_TOUCHABLE: Android 12+ caps touch-through
+                // overlays at 80% opacity, which washes the panel out, and a TV
+                // has no touchscreen to pass touches to anyway.
                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
-                        | WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
                         | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
                         | WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED,
                 PixelFormat.TRANSLUCENT);

@@ -21,8 +21,8 @@ app, and never reads another app's data.
 
 ## How the app is contained
 
-- **No input capture.** The panel window is `FLAG_NOT_FOCUSABLE` and
-  `FLAG_NOT_TOUCHABLE`: your remote always controls the app you are watching.
+- **No input capture.** The panel window is `FLAG_NOT_FOCUSABLE`: it can never
+  take focus, so every remote button goes to the app you are watching.
 - **Nothing in the background.** No boot receiver, no jobs, no alarms. The
   service exists only while the panel is on screen, returns `START_NOT_STICKY`
   so Android never revives it, and closes itself when the TV goes to sleep.

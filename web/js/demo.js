@@ -2,7 +2,7 @@
 // clocks that keep running so the panel animates exactly as it would live.
 // Used for screenshots, the public preview, and tests. No network access.
 import { buildMatchup } from './model.js';
-import { shortName } from './util.js';
+import { shortName, fmtTime } from './util.js';
 
 function rng(seed) {
   let s = seed >>> 0;
@@ -145,7 +145,7 @@ export function createDemo({ startMinute = 34, speed = 4 } = {}) {
           const opp = g.home === team ? `v ${g.away}` : `@ ${g.home}`;
           label =
             state === 'pre'
-              ? new Date(g.start).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
+              ? fmtTime(g.start)
               : state === 'post'
                 ? `Final ${opp}`
                 : `Q${g.period} ${g.clock} ${opp}`;

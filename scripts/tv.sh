@@ -68,7 +68,11 @@ case "$cmd" in
     connect
     installed || die "app not installed: make tv-install"
     [ -f "$CFG" ] || die "no $CFG"
-    payload=$(jq -c '{sleeper, espn, panel}' "$CFG" | b64)
+    # The TV's clock zone may be wrong; default the panel to this computer's.
+    payload=$(jq -c --arg tz "${HOST_TZ:-}" --arg loc "${HOST_LOCALE:-}" '
+      {sleeper, espn, panel: ((.panel // {})
+        + (if (.panel.timeZone // "") == "" and $tz != "" then {timeZone: $tz} else {} end)
+        + (if (.panel.locale // "") == "" and $loc != "" then {locale: $loc} else {} end))}' "$CFG" | b64)
     res=$($ADB shell am broadcast -a "$PKG.CONFIG" -n "$PKG/.ControlReceiver" --es b64 "$payload")
     case "$res" in *'data="saved"'*) echo "league settings sent to the TV";; *) die "TV rejected config: $res";; esac
     ;;

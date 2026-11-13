@@ -9,7 +9,7 @@
 }
 
 :root {
-  --bg: rgba(14, 14, 16, 0.96);
+  --bg: rgba(14, 14, 16, 0.985);
   --bg-solid: #0e0e10;
   --hair: rgba(255, 255, 255, 0.08);
   --text: #f5f5f7;
@@ -43,7 +43,7 @@ body.solid { background: var(--bg-solid); }
   display: flex;
   flex-direction: column;
   padding: var(--pad) var(--pad) 22px;
-  background: linear-gradient(180deg, rgba(24, 24, 28, 0.95) 0%, var(--bg) 45%, rgba(10, 10, 12, 0.95) 100%);
+  background: linear-gradient(180deg, rgba(24, 24, 28, 0.985) 0%, var(--bg) 45%, rgba(10, 10, 12, 0.985) 100%);
   border-left: 1px solid var(--hair);
 }
 body.left .panel { border-left: 0; border-right: 1px solid var(--hair); }
@@ -53,8 +53,9 @@ body.left .panel { border-left: 0; border-right: 1px solid var(--hair); }
 .week { font-size: 26px; font-weight: 650; letter-spacing: -0.02em; }
 .status { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 500; color: var(--text-2); }
 .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-3); flex: none; }
-.dot.live { background: var(--live); animation: pulse 2s ease-in-out infinite; }
-@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+/* Static on purpose: a looping animation would make the TV redraw the panel
+   60 times a second. The panel only repaints when data changes. */
+.dot.live { background: var(--live); box-shadow: 0 0 0 3px rgba(48, 209, 88, 0.2); }
 
 /* Matchup summaries */
 .matchups { display: flex; flex-direction: column; }
@@ -180,7 +181,7 @@ body.card .panel {
   padding: 20px 24px 14px;
   border: 0;
   border-radius: 22px;
-  background: rgba(20, 20, 24, 0.94);
+  background: rgba(20, 20, 24, 0.985);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
 }
 body.card .top { margin-bottom: 6px; }

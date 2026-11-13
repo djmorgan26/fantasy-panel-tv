@@ -87,6 +87,8 @@ services:
     environment:
       - MODE=${MODE:-full}
       - TV=${TV:-}
+      - HOST_TZ=${HOST_TZ:-}
+      - HOST_LOCALE=${HOST_LOCALE:-}
     volumes:
       - ./:/repo
       - ./.adb:/root/.android
