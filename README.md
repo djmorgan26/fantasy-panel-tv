@@ -95,11 +95,12 @@ that refuses any commit containing a value from it.
 | --- | --- |
 | `make preview` | Live preview at http://localhost:8080/preview.html?demo=1 |
 | `make test` | Unit tests |
+| `make e2e` | Playwright behaviour tests: scores tick, leagues rotate, big plays pop, proxy locked down |
 | `make shots` | Playwright screenshots of the demo at 1920x1080 |
 | `make shots-live` | Screenshots with your own leagues, into `.private/` |
 | `make apk` | Build `dist/fantasy-panel.apk` |
 | `make tv-status` | Is it installed, permitted, showing? |
-| `make tv-show` / `tv-hide` / `tv-open` | Control the panel |
+| `make tv-show` / `tv-hide` / `tv-open` | Control the panel (`MODE=mini` for the score card) |
 | `make tv-shot` | Screenshot the TV |
 | `make tv-uninstall` | Remove it completely |
 
